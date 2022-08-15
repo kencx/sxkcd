@@ -35,26 +35,31 @@ type Comic struct {
 func GetAllComics(total int) ([]*Comic, error) {
 
 	var wg sync.WaitGroup
-	ch := make(chan struct{}, 50) // max number of concurrent requests
+	tokens := make(chan struct{}, 50) // max number of concurrent requests
 	comics := make([]*Comic, total)
 
 	for i := 1; i < total+1; i++ {
 		wg.Add(1)
-		s := strconv.Itoa(i)
 
-		go func(i int, num string) {
+		go func(i int) {
+			defer func() { <-tokens }()
 			defer wg.Done()
-			ch <- struct{}{} // acquire token
-			comic, err := GetComic(num)
+
+			tokens <- struct{}{}
+			if i == 404 {
+				return
+			}
+
+			comic, err := GetComic(strconv.Itoa(i))
 			if err != nil {
 				log.Println(err)
 				return
 			}
-			comics[i-1] = comic
-			<-ch // release token
-		}(i, s)
-	}
 
+			// no need for mutex as all goroutines write to different memory
+			comics[i-1] = comic
+		}(i)
+	}
 	wg.Wait()
 	return comics, nil
 }
@@ -80,7 +85,7 @@ func GetComic(num string) (*Comic, error) {
 	err = json.Unmarshal([]byte(body), &comic)
 	if err != nil {
 		if e, ok := err.(*json.SyntaxError); ok {
-			return nil, fmt.Errorf("failed to unmarshal due to syntax error at byte offset %d", e.Offset)
+			return nil, fmt.Errorf("failed to unmarshal %s due to syntax error at byte offset %d", num, e.Offset)
 		}
 		return nil, fmt.Errorf("failed to unmarshal: %v", err)
 	}
@@ -99,7 +104,12 @@ func parseEndpoint(baseUrl, num string) (string, error) {
 
 func main() {
 	start := time.Now()
-	comics, err := GetAllComics(2000)
+	latest, err := GetComic("")
+	if err != nil {
+		log.Fatalf("failed to get latest comic: %v", err)
+	}
+
+	comics, err := GetAllComics(latest.Number)
 	if err != nil {
 		log.Fatal(err)
 	}
