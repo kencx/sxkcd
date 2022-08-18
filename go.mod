@@ -1,4 +1,4 @@
-module xkcd
+module github.com/kencx/rkcd
 
 go 1.17
 
