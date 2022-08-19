@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,18 +9,23 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"os/signal"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
 	XkcdBaseUrl        = "https://xkcd.com"
 	ExplainBaseUrl     = "https://www.explainxkcd.com/wiki/api.php"
 	xkcdEndpoint       = "info.0.json"
-	defaultTimeOut     = 20
+	defaultTimeOut     = 30
 	defaultMaxBodySize = 15 * 1024 * 1024
 )
 
@@ -121,6 +127,9 @@ func (c *Client) getRequest(f func(int) (string, error), number int, dest interf
 
 	resp, err := c.Client.Get(url)
 	if err != nil {
+		if os.IsTimeout(err) {
+			return fmt.Errorf("request to %v timed out", url)
+		}
 		return fmt.Errorf("request to %v failed: %v", url, err)
 	}
 
@@ -151,44 +160,48 @@ func (c *Client) getRequest(f func(int) (string, error), number int, dest interf
 	return nil
 }
 
-// TODO use errgroup
 // Retrieve all comics up to latest comic number concurrently
 func (c *Client) RetrieveAllComics(latest int) (map[int]*Comic, error) {
 
-	var (
-		wg sync.WaitGroup
-		mu sync.Mutex
-	)
+	var mu sync.Mutex
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
-	tokens := make(chan struct{}, 50) // max number of concurrent requests
+	g, gtx := errgroup.WithContext(ctx)
+	g.SetLimit(60)
+
 	comics := make(map[int]*Comic, latest)
-
 	for i := 1; i < latest+1; i++ {
-		wg.Add(1)
+		id := i
 
-		go func(i int) {
-			defer wg.Done()
-			defer func() { <-tokens }()
-
-			tokens <- struct{}{}
-
-			if i == 404 {
-				return
+		g.Go(func() error {
+			if id == 404 {
+				return nil
 			}
-
-			comic, err := c.RetrieveComic(i)
+			comic, err := c.RetrieveComic(id)
 			if err != nil {
 				log.Println(err)
-				return
+				return err
 			}
 
 			mu.Lock()
 			defer mu.Unlock()
-			comics[i] = comic
-		}(i)
+			comics[id] = comic
+
+			select {
+			case <-gtx.Done():
+				return gtx.Err()
+			default:
+				return nil
+			}
+		})
 	}
-	wg.Wait()
-	return comics, nil
+
+	if err := g.Wait(); err == nil || err == context.Canceled {
+		return comics, nil
+	} else {
+		return nil, err
+	}
 }
 
 // Parses the endpoint at https://xkcd.com/[number]/info.0.json
