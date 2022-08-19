@@ -2,7 +2,7 @@ package data
 
 import (
 	"fmt"
-	"log"
+	"io/ioutil"
 	"strings"
 	"time"
 )
@@ -63,26 +63,10 @@ func NewComic(x XkcdComic, e ExplainXkcd) (*Comic, error) {
 	return c, nil
 }
 
-func ParseAllComics(x map[int]*XkcdComic, e map[int]*ExplainXkcd) (map[int]*Comic, error) {
-	comics := make(map[int]*Comic)
-
-	for i := 1; i < len(x)+1; i++ {
-		xkcd, ok := x[i]
-		if !ok {
-			log.Printf("xkcd %d not found\n", i)
-			continue
-		}
-		explain, ok := e[i]
-		if !ok {
-			log.Printf("explainxkcd %d not found\n", i)
-			continue
-		}
-
-		c, err := NewComic(*xkcd, *explain)
-		if err != nil {
-			return nil, err
-		}
-		comics[i] = c
+func WriteToFile(filename string, data []byte) error {
+	err := ioutil.WriteFile(filename, data, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write file: %v", err)
 	}
-	return comics, nil
+	return nil
 }
