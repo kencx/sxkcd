@@ -2,8 +2,15 @@ package http
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/kencx/rkcd/data"
 )
 
 type Server struct {
@@ -20,6 +27,77 @@ func NewServer() *Server {
 	}
 }
 
-func (s *Server) Run() {
+func (s *Server) ReadFile(filename string) error {
+	body, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %v", filename, err)
+	}
 
+	var comics map[int]*data.Comic
+	if err := json.Unmarshal(body, &comics); err != nil {
+		return fmt.Errorf("failed to unmarshal data: %v", err)
+	}
+
+	start := time.Now()
+	log.Printf("Starting indexing of %d comics\n", len(comics))
+
+	err = s.Index(comics)
+	if err != nil {
+		return err
+	}
+	log.Printf("Successfully indexed %d comics in %v\n", len(comics), time.Since(start))
+	return nil
+}
+
+func (s *Server) Run(port int) error {
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/search", s.searchHandler)
+
+	// send data to endpoint
+	// mux.HandleFunc("/load", s.loadData)
+
+	// serve static files
+
+	// graceful shutdow
+
+	p := fmt.Sprintf(":%d", port)
+	log.Printf("Starting server at %s", p)
+	if err := http.ListenAndServe(p, mux); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) searchHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	start := time.Now()
+
+	count, results, err := s.Search(query)
+	if err != nil {
+		log.Println(err)
+		errorResponse(w, err)
+		return
+	}
+	timeTaken := time.Since(start)
+	log.Printf("Query produced %d results in %vs: %s", count, timeTaken.Seconds(), query)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
+		"count":      count,
+		"results":    results,
+		"query_time": timeTaken.Seconds(),
+	}); err != nil {
+		errorResponse(w, err)
+		return
+	}
+}
+
+func errorResponse(w http.ResponseWriter, err error) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	json.NewEncoder(w).Encode(map[string]string{
+		"error": err.Error(),
+	})
 }
