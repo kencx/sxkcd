@@ -8,12 +8,11 @@
 
 <div class="container center">
 	<div class="title">
-		<h1><a href="/"><span>r</span>kcd</a></h1>
-		<h6>[redis]kcd</h6>
+		<h1><a class="contrast" href="/"><span>r</span>kcd</a></h1>
 	</div>
 
 	<div class="desc">
-		<p>Blazing fast <a href="https://xkcd.com">xkcd</a> search engine</p>
+		<p>Blazing fast <a class="contrast" href="https://xkcd.com">xkcd</a> search engine</p>
 	</div>
 
 	<Search/>
