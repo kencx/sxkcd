@@ -1,11 +1,10 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	let preferDark: boolean;
-	let currentTheme: string;
+	export let currentTheme: string = "light";
+	export let checked: boolean = false;
 
 	function toggle(currentTheme: string) {
 		// handle system set theme
-		let state = document.documentElement.dataset['theme']
+		let state: string | undefined = document.documentElement.dataset['theme']
 		if (state === undefined) {
 			document.documentElement.dataset['theme'] = currentTheme;
 		}
@@ -13,20 +12,13 @@
 		state = document.documentElement.dataset['theme']
 		document.documentElement.dataset['theme'] = state === 'light' ? 'dark' : 'light'
 	}
-
-	onMount(async() => {
-		preferDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
-		currentTheme = preferDark ? "dark" : "light";
-	});
-
-	$: checked = currentTheme === "light" ? false : true;
 </script>
 
 <header class="container header">
 <nav>
 	<ul>
 	</ul>
-	<ul>
+	<ul class="right-icons">
 		<li>
 			<label for="theme-switcher" class="sr-only">Switch theme</label>
 			<input id="theme-switcher" type="checkbox" role="switch"
@@ -44,6 +36,10 @@
 <style>
 .header {
 	padding: 0;
+}
+
+.right-icons {
+	padding-right: 1rem;
 }
 
 .sr-only {
