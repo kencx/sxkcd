@@ -4,15 +4,15 @@
 	import '../app.css';
 </script>
 
-<main>
-	<Header/>
-	<slot />
-	<Footer/>
-</main>
+<svelte:head>
+	<title>rkcd</title>
+	<meta name="description" content="A xkcd search engine" />
+	<link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+</svelte:head>
 
-<style>
-	a {
-		/* background-color: orange; */
-		background-color: #96a8c8
-	}
-</style>
+<Header/>
+<main>
+	<slot />
+</main>
+<Footer/>
+
