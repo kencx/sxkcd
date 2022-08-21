@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/kencx/rkcd/data"
 )
 
-func (s *Server) Index(comics map[int]*data.Comic) error {
+func (s *Server) Index() error {
 	s.rdb.Do(s.ctx,
 		"FT.CREATE", "comics", "ON", "JSON", "PREFIX", "1", "comic:",
 		"SCHEMA",
@@ -20,7 +21,7 @@ func (s *Server) Index(comics map[int]*data.Comic) error {
 	)
 
 	pipe := s.rdb.Pipeline()
-	for i, c := range comics {
+	for i, c := range s.comics {
 		j, err := json.Marshal(&c)
 		if err != nil {
 			return fmt.Errorf("failed to marshal comic %d: %v", c.Number, err)
@@ -38,7 +39,7 @@ func (s *Server) Index(comics map[int]*data.Comic) error {
 }
 
 // returns slice of first 100 IDs matching query
-func (s *Server) Search(query string) (int64, []string, error) {
+func (s *Server) Search(query string) (int64, []*data.Comic, error) {
 	values, err := s.rdb.Do(s.ctx,
 		"FT.SEARCH", "comics", query,
 		"RETURN", "0",
@@ -49,9 +50,17 @@ func (s *Server) Search(query string) (int64, []string, error) {
 	}
 
 	count := values[0].(int64)
-	var results []string
+
+	var results []*data.Comic
 	for _, v := range values[1:] {
-		results = append(results, v.(string))
+		r := strings.TrimPrefix(v.(string), "comic:")
+		id, err := strconv.Atoi(r)
+		if err != nil {
+			return 0, nil, err
+		}
+		f := s.comics[id]
+		results = append(results, f)
 	}
+
 	return count, results, nil
 }

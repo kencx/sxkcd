@@ -1,5 +1,14 @@
+<script lang="ts" context="module">
+	export type Comic = {
+		title: string;
+		date: string;
+		num: number;
+		img_url: string;
+		alt: string;
+	};
+</script>
+
 <script lang="ts">
-	import type { Comic } from "./search"
 	export let result: Comic;
 </script>
 
@@ -8,15 +17,15 @@
 		<h4>{result.title}</h4>
 		<small>
 			<span>{result.date}</span> |
-			<span><a href="https://xkcd.com/{result.number}" target="_blank">#{result.number}</a></span> |
-			<span><a href="https://explainxkcd.com/{result.number}" target="_blank">explain</a></span>
+			<span><a href="https://xkcd.com/{result.num}" target="_blank">#{result.num}</a></span> |
+			<span><a href="https://explainxkcd.com/{result.num}" target="_blank">explain</a></span>
 		</small>
 	</hgroup>
 	<div class="img">
-		<img src={result.imgUrl} alt=""/>
+		<img src={result.img_url} alt=""/>
 	</div>
 	<div class="alt">
-		<p>{result.altText}</p>
+		<p>{result.alt}</p>
 	</div>
 	<hr style="border: 0; height: 1px; background-color: #333;">
 </div>

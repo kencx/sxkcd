@@ -14,8 +14,9 @@ import (
 )
 
 type Server struct {
-	ctx context.Context
-	rdb redis.Client
+	ctx    context.Context
+	rdb    redis.Client
+	comics map[int]*data.Comic
 }
 
 func NewServer() *Server {
@@ -33,19 +34,18 @@ func (s *Server) ReadFile(filename string) error {
 		return fmt.Errorf("failed to read %s: %v", filename, err)
 	}
 
-	var comics map[int]*data.Comic
-	if err := json.Unmarshal(body, &comics); err != nil {
+	if err := json.Unmarshal(body, &s.comics); err != nil {
 		return fmt.Errorf("failed to unmarshal data: %v", err)
 	}
 
 	start := time.Now()
-	log.Printf("Starting indexing of %d comics\n", len(comics))
+	log.Printf("Starting indexing of %d comics\n", len(s.comics))
 
-	err = s.Index(comics)
+	err = s.Index()
 	if err != nil {
 		return err
 	}
-	log.Printf("Successfully indexed %d comics in %v\n", len(comics), time.Since(start))
+	log.Printf("Successfully indexed %d comics in %v\n", len(s.comics), time.Since(start))
 	return nil
 }
 
