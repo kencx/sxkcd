@@ -16,7 +16,7 @@
 	<hgroup class="titles">
 		<h4>{result.title}</h4>
 		<small>
-			<span>{result.date}</span> |
+			<span>{(result.date).split('T')[0]}</span> |
 			<span><a href="https://xkcd.com/{result.num}" target="_blank">#{result.num}</a></span> |
 			<span><a href="https://explainxkcd.com/{result.num}" target="_blank">explain</a></span>
 		</small>
