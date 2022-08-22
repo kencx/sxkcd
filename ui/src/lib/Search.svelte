@@ -28,7 +28,7 @@
 	{#await promise then data}
 		{#if data != null}
 			<div class="timer">
-				<p>found <span class="contrast">{data.count}</span> results in {data.time}s</p>
+				<p>found <span class="contrast">{data.count}</span> results in {(data.time*1000).toFixed(3)}ms</p>
 			</div>
 			<div>
 				{#if data.comics}
