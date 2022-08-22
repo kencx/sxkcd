@@ -14,15 +14,28 @@
 	}
 
 	$: promise = search(query);
+
+	function focus() {
+		document.getElementById("search-bar").focus();
+	}
+
+	function handleKeyDown(event) {
+		switch (event.key) {
+			case "/":
+				event.preventDefault()
+				focus();
+				break;
+		}
+	}
 </script>
 
-<form class="container search">
+<svelte:window on:keydown={handleKeyDown}/>
+
 <div class="container search">
 	<label for="search-bar" class="sr-only">Search</label>
 	<input id="search-bar" type="search"
 		autocomplete="off"
 		placeholder="Search..."
-		on:submit|preventDefault={debounce}
 		on:input|preventDefault={debounce}
 	/>
 
