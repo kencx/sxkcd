@@ -18,7 +18,7 @@
 <svelte:head>
 	<title>rkcd</title>
 	<meta name="description" content="A xkcd search engine" />
-	<link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+	<link rel="stylesheet" href="/css/pico.min.css">
 </svelte:head>
 
 <Header currentTheme={theme} checked={checked}/>
