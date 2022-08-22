@@ -4,7 +4,7 @@
 		date: string;
 		num: number;
 		img_url: string;
-		alt: string;
+		alt?: string;
 	};
 </script>
 
@@ -27,7 +27,7 @@
 	<div class="alt">
 		<p>{result.alt}</p>
 	</div>
-	<hr style="border: 0; height: 1px; background-color: #333;">
+	<hr style="border: 0; height: 1px;">
 </div>
 
 <style>

@@ -5,8 +5,7 @@ ldflags = -ldflags "-s -w -X main.version=${version} -X github.com/kencx/rkcd/ht
 .PHONY: build run test dcu clean
 
 build:
-	go build ${ldflags} -v ./cmd/rkcd
-	go build ${ldflags} -v ./cmd/rkcd-cli
+	go build ${ldflags} -v .
 
 run:
 	./rkcd
@@ -18,4 +17,4 @@ dcu:
 	docker-compose up -d
 
 clean:
-	rm -rf rkcd rkcd-cli
+	rm -rf rkcd

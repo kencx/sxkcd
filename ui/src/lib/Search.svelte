@@ -1,25 +1,25 @@
 <script lang="ts">
 	import Comic from '$lib/Comic.svelte';
-	import type { SearchResult } from './search'
-	import { search} from './search'
+	import { search } from './search'
 
 	let query: string = '';
-	let timer;
+	let timer: any;
 
-	const debounce = e => {
+	const debounce = (e: any) => {
 		clearTimeout(timer);
 		timer = setTimeout(() => {
 			query = e.target.value;
 		}, 300);
 	}
 
-	$: promise = search(query);
-
 	function focus() {
-		document.getElementById("search-bar").focus();
+		let searchBar: any = document.getElementById("search-bar")
+		if (searchBar != null) {
+			searchBar.focus();
+		}
 	}
 
-	function handleKeyDown(event) {
+	function handleKeyDown(event: any) {
 		switch (event.key) {
 			case "/":
 				event.preventDefault()
@@ -27,6 +27,8 @@
 				break;
 		}
 	}
+
+	$: promise = search(query);
 </script>
 
 <svelte:window on:keydown={handleKeyDown}/>
@@ -41,13 +43,13 @@
 
 	{#await promise then data}
 		{#if data != null}
-			<div class="timer">
+			<div class="search-message">
 				<p>found <span class="contrast">{data.count}</span> results in {(data.time*1000).toFixed(3)}ms</p>
 			</div>
 			<div>
 				{#if data.comics}
 					{#each data.comics as comic}
-					<Comic result={comic}/>
+						<Comic result={comic}/>
 					{/each}
 				{/if}
 			</div>
@@ -62,7 +64,7 @@
 	width: 75%;
 }
 
-.timer {
+.search-message {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -70,7 +72,7 @@
 	margin-bottom: 1.5rem;
 }
 
-.timer p {
+.search-message p {
 	font-size: 0.8rem;
 }
 

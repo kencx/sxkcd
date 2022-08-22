@@ -2,8 +2,10 @@ package http
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -19,14 +21,16 @@ type Server struct {
 	ctx    context.Context
 	rdb    redis.Client
 	comics map[int]*data.Comic
+	Static embed.FS
 }
 
-func NewServer() *Server {
+func NewServer(static embed.FS) *Server {
 	return &Server{
 		ctx: context.Background(),
 		rdb: *redis.NewClient(&redis.Options{
 			Addr: "localhost:6379",
 		}),
+		Static: static,
 	}
 }
 
@@ -57,12 +61,14 @@ func (s *Server) Run(port int) error {
 	mux.HandleFunc("/search", s.searchHandler)
 	mux.HandleFunc("/health", s.healthcheckHandler)
 
-	// send data to endpoint
-	// mux.HandleFunc("/load", s.loadData)
+	// embed static files
+	dir, err := fs.Sub(s.Static, "ui/build")
+	if err != nil {
+		return err
+	}
+	mux.Handle("/", http.FileServer(http.FS(dir)))
 
-	// serve static files
-
-	// graceful shutdow
+	// graceful shutdown
 
 	p := fmt.Sprintf(":%d", port)
 	log.Printf("Starting server at %s", p)

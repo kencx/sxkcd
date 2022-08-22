@@ -1,5 +1,5 @@
 
-import Comic from '$lib/Comic.svelte';
+import type Comic from '$lib/Comic.svelte';
 
 export type SearchResult = {
 	count: number;
@@ -32,6 +32,7 @@ export async function search(query: string): Promise<SearchResult | null> {
 	} catch (err: any) {
 		if (err.name == 'AbortError') {
 			console.log('fetch aborted');
+			return null
 		} else {
 			console.error(err);
 			throw err;
