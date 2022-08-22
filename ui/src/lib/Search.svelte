@@ -17,9 +17,10 @@
 </script>
 
 <form class="container search">
+<div class="container search">
 	<label for="search-bar" class="sr-only">Search</label>
-	<input id="search-bar"
-		autofocus
+	<input id="search-bar" type="search"
+		autocomplete="off"
 		placeholder="Search..."
 		on:submit|preventDefault={debounce}
 		on:input|preventDefault={debounce}
@@ -41,7 +42,7 @@
 	{:catch error}
 		<small class="error">An error occured: {error.message}</small>
 	{/await}
-</form>
+</div>
 
 <style>
 .search {
