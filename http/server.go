@@ -13,6 +13,8 @@ import (
 	"github.com/kencx/rkcd/data"
 )
 
+var version string
+
 type Server struct {
 	ctx    context.Context
 	rdb    redis.Client
@@ -53,6 +55,7 @@ func (s *Server) Run(port int) error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/search", s.searchHandler)
+	mux.HandleFunc("/health", s.healthcheckHandler)
 
 	// send data to endpoint
 	// mux.HandleFunc("/load", s.loadData)
@@ -88,6 +91,17 @@ func (s *Server) searchHandler(w http.ResponseWriter, r *http.Request) {
 		"count":      count,
 		"results":    results,
 		"query_time": timeTaken.Seconds(),
+	}); err != nil {
+		errorResponse(w, err)
+		return
+	}
+}
+
+func (s *Server) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
+		"version": version,
 	}); err != nil {
 		errorResponse(w, err)
 		return
