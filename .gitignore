@@ -1,5 +1,8 @@
 rkcd*
-*.json
 node_modules
 .svelte-kit
 build
+
+*.json
+!package.json
+!package-lock.json
