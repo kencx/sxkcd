@@ -16,5 +16,8 @@ test:
 dcu:
 	docker-compose up -d
 
+dbuild:
+	docker-compose up -d --build
+
 clean:
 	rm -rf rkcd

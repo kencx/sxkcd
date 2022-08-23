@@ -9,6 +9,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -18,20 +21,27 @@ import (
 var version string
 
 type Server struct {
-	ctx    context.Context
-	rdb    redis.Client
+	ctx context.Context
+	rdb redis.Client
+
 	comics map[int]*data.Comic
 	Static embed.FS
 }
 
-func NewServer(static embed.FS) *Server {
-	return &Server{
+func NewServer(uri string, static embed.FS) (*Server, error) {
+	s := &Server{
 		ctx: context.Background(),
 		rdb: *redis.NewClient(&redis.Options{
-			Addr: "redis:6379",
+			Addr: uri,
 		}),
 		Static: static,
 	}
+
+	if err := s.rdb.Ping(s.ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to redis database: %v", err)
+	}
+
+	return s, nil
 }
 
 func (s *Server) ReadFile(filename string) error {
@@ -57,7 +67,13 @@ func (s *Server) ReadFile(filename string) error {
 
 func (s *Server) Run(port int) error {
 
+	p := fmt.Sprintf(":%d", port)
 	mux := http.NewServeMux()
+	srv := &http.Server{
+		Addr:    p,
+		Handler: mux,
+	}
+
 	mux.HandleFunc("/search", s.searchHandler)
 	mux.HandleFunc("/health", s.healthcheckHandler)
 
@@ -68,13 +84,22 @@ func (s *Server) Run(port int) error {
 	}
 	mux.Handle("/", http.FileServer(http.FS(dir)))
 
-	// graceful shutdown
+	go func() {
+		log.Fatalf("failed to start server: %v", srv.ListenAndServe())
+	}()
+	log.Printf("Server started at %s", p)
 
-	p := fmt.Sprintf(":%d", port)
-	log.Printf("Starting server at %s", p)
-	if err := http.ListenAndServe(p, mux); err != nil {
-		return err
-	}
+	// graceful shutdown
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-sigCh
+	log.Printf("Received signal %s, shutting down...", sig.String())
+
+	tc, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	log.Fatalf("failed to shut down gracefully: %v", srv.Shutdown(tc))
+
+	log.Printf("Application gracefully stopped")
 	return nil
 }
 

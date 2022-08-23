@@ -27,6 +27,7 @@ const (
   server:
     -f, --file      Read data from file
     -p, --port      Server port
+    -r, --redis     Redis connection URI [host:port]
 
   download:
     -l, --latest    Get latest comic number
@@ -41,6 +42,7 @@ func main() {
 		showVersion bool
 		file        string
 		port        int
+		rds         string
 
 		latest       bool
 		num          int
@@ -53,8 +55,10 @@ func main() {
 	serverCmd := flag.NewFlagSet("server", flag.ExitOnError)
 	serverCmd.StringVar(&file, "f", "", "read data from file")
 	serverCmd.StringVar(&file, "file", "", "read data from file")
-	serverCmd.IntVar(&port, "p", 6500, "port")
-	serverCmd.IntVar(&port, "port", 6500, "port")
+	serverCmd.IntVar(&port, "p", 6380, "port")
+	serverCmd.IntVar(&port, "port", 6380, "port")
+	serverCmd.StringVar(&rds, "r", "redis:6379", "redis connection URI [host:port]")
+	serverCmd.StringVar(&rds, "redis", "redis:6379", "redis connection URI [host:port]")
 
 	downloadCmd := flag.NewFlagSet("download", flag.ExitOnError)
 	downloadCmd.BoolVar(&latest, "l", false, "get latest comic number")
@@ -64,9 +68,8 @@ func main() {
 	downloadCmd.StringVar(&downloadFile, "f", "data/comics.json", "download all comics to file")
 	downloadCmd.StringVar(&downloadFile, "file", "data/comics.json", "download all comics to file")
 
-	flag.Parse()
-
 	flag.Usage = func() { os.Stdout.Write([]byte(help)) }
+	flag.Parse()
 
 	if showVersion {
 		fmt.Println(version)
@@ -133,13 +136,23 @@ func main() {
 		}
 	}
 
-	s := http.NewServer(static)
-	if file != "" {
-		if err := s.ReadFile(file); err != nil {
-			log.Fatal(err)
-		}
-	} else {
+	if rds == "" {
+		log.Fatal("Redis connection URI must be provided")
+	}
+	if file == "" {
 		log.Fatal("Data file must be provided")
+	}
+	if port <= 0 {
+		log.Fatalf("Invalid port: %v", port)
+	}
+
+	s, err := http.NewServer(rds, static)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := s.ReadFile(file); err != nil {
+		log.Fatal(err)
 	}
 
 	if err := s.Run(port); err != nil {
