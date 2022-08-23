@@ -14,11 +14,11 @@ RUN go mod download
 COPY . .
 COPY --from=frontend /ui/build ./ui/build
 
-RUN go vet -v
-RUN go build -v .
+RUN go vet -v && go build -v .
 
 FROM alpine:3.15
+WORKDIR /
 # requires buildkit: DOCKER_BUILDKIT=1
-COPY --from=builder --chmod=+x /app/rkcd /app/entrypoint.sh ./app/data/comics.json ./
+COPY --from=builder --chmod=+x /app/rkcd /app/entrypoint.sh ./
 EXPOSE 6380
 ENTRYPOINT [ "/entrypoint.sh" ]

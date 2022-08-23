@@ -4,13 +4,16 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -45,13 +48,31 @@ func NewServer(uri string, static embed.FS) (*Server, error) {
 }
 
 func (s *Server) ReadFile(filename string) error {
-	body, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return fmt.Errorf("failed to read %s: %v", filename, err)
+	var (
+		body []byte
+		err  error
+	)
+
+	if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
+		response, err := http.Get(filename)
+		if err != nil {
+			return fmt.Errorf("failed to get %s: %v", filename, err)
+		}
+		defer response.Body.Close()
+
+		body, err = io.ReadAll(response.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read body: %v", err)
+		}
+	} else {
+		body, err = ioutil.ReadFile(filename)
+		if err != nil {
+			return fmt.Errorf("failed to read %s: %v", filename, err)
+		}
 	}
 
 	if err := json.Unmarshal(body, &s.comics); err != nil {
-		return fmt.Errorf("failed to unmarshal data: %v", err)
+		return fmt.Errorf("ReadFile: failed to unmarshal data: %v", err)
 	}
 
 	start := time.Now()
@@ -85,7 +106,10 @@ func (s *Server) Run(port int) error {
 	mux.Handle("/", http.FileServer(http.FS(dir)))
 
 	go func() {
-		log.Fatalf("failed to start server: %v", srv.ListenAndServe())
+		err := srv.ListenAndServe()
+		if !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("failed to start server: %v", err)
+		}
 	}()
 	log.Printf("Server started at %s", p)
 
@@ -97,7 +121,9 @@ func (s *Server) Run(port int) error {
 
 	tc, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	log.Fatalf("failed to shut down gracefully: %v", srv.Shutdown(tc))
+	if err := srv.Shutdown(tc); err != nil {
+		log.Fatalf("failed to shut down gracefully: %v", err)
+	}
 
 	log.Printf("Application gracefully stopped")
 	return nil

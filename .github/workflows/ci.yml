@@ -28,6 +28,9 @@ jobs:
       - name: Checkout codebase
         uses: actions/checkout@v2
 
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v2.0.0
+
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
