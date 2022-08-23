@@ -11,7 +11,7 @@ run:
 	./rkcd
 
 test:
-	go test -race ./...
+	go test -race ./data
 
 dcu:
 	docker-compose up -d
