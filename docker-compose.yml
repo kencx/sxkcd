@@ -6,3 +6,12 @@ services:
     hostname: redis
     ports:
       - "6379:6379"
+
+  app:
+    container_name: app
+    image: rkcd:latest
+    build: .
+    ports:
+      - "6380:6380"
+    depends_on:
+      - redis
