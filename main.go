@@ -146,7 +146,7 @@ func main() {
 		log.Fatalf("Invalid port: %v", port)
 	}
 
-	s, err := http.NewServer(rds, static)
+	s, err := http.NewServer(rds, version, static)
 	if err != nil {
 		log.Fatal(err)
 	}

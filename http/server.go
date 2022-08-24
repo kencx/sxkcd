@@ -21,23 +21,23 @@ import (
 	"github.com/kencx/rkcd/data"
 )
 
-var version string
-
 type Server struct {
 	ctx context.Context
 	rdb redis.Client
 
-	comics map[int]*data.Comic
-	Static embed.FS
+	comics  map[int]*data.Comic
+	Static  embed.FS
+	Version string
 }
 
-func NewServer(uri string, static embed.FS) (*Server, error) {
+func NewServer(uri, version string, static embed.FS) (*Server, error) {
 	s := &Server{
 		ctx: context.Background(),
 		rdb: *redis.NewClient(&redis.Options{
 			Addr: uri,
 		}),
-		Static: static,
+		Version: version,
+		Static:  static,
 	}
 
 	if err := s.rdb.Ping(s.ctx).Err(); err != nil {
@@ -158,7 +158,7 @@ func (s *Server) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{
-		"version": version,
+		"version": s.Version,
 	}); err != nil {
 		errorResponse(w, err)
 		return

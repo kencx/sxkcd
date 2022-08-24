@@ -1,6 +1,6 @@
 # version = $(shell git describe --tags)
 version = "v0.1.0"
-ldflags = -ldflags "-s -w -X main.version=${version} -X github.com/kencx/rkcd/http.version=${version}"
+ldflags = -ldflags "-s -w -X main.version=${version}"
 
 .PHONY: build dbuild run test dcu clean deploy destroy
 
