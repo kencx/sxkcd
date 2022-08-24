@@ -2,10 +2,13 @@
 version = "v0.1.0"
 ldflags = -ldflags "-s -w -X main.version=${version} -X github.com/kencx/rkcd/http.version=${version}"
 
-.PHONY: build run test dcu clean
+.PHONY: build dbuild run test dcu clean deploy destroy
 
 build:
 	go build ${ldflags} -v .
+
+dbuild: docker-compose.yml
+	docker-compose up -d --build
 
 run:
 	./rkcd
@@ -13,11 +16,14 @@ run:
 test:
 	go test -race ./data
 
-dcu:
+dcu: docker-compose.yml
 	docker-compose up -d
 
-dbuild:
-	docker-compose up -d --build
+deploy: deploy/terraform.tfstate
+	cd deploy && terraform apply
+
+destroy:
+	cd deploy && terraform destroy
 
 clean:
 	rm -rf rkcd
