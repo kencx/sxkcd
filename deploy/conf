@@ -1,0 +1,21 @@
+events {}
+
+http {
+	server {
+		listen 80 default_server;
+		server_name localhost:8080;
+
+		location / {
+			proxy_pass http://app:6380/;
+		}
+	}
+
+	server {
+		listen 443;
+		server_name _;
+
+		location / {
+			return 301 http://$host:8080/;
+		}
+	}
+}

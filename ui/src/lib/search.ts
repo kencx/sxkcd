@@ -15,7 +15,7 @@ export async function search(query: string): Promise<SearchResult | null> {
 	let abort = new AbortController();
 	try {
 		// TODO change to /search?q= when embedded in binary
-		const response = await fetch("http://localhost:6380/search?q=" + query, {
+		const response = await fetch("/search?q=" + query, {
 			signal: abort.signal
 		});
 

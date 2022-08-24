@@ -1,0 +1,31 @@
+version: "3.6"
+services:
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+
+  app:
+    container_name: app
+    hostname: app
+    image: rkcd:latest
+    build: .
+    ports:
+      - "6380:6380"
+    depends_on:
+      - redis
+
+  nginx:
+    container_name: nginx
+    hostname: nginx
+    image: nginx:1.23-alpine
+    ports:
+      - "8080:80"
+      - "8081:443"
+    volumes:
+      - "./deploy/conf:/etc/nginx/nginx.conf:ro"
+    depends_on:
+      - redis
+      - app
