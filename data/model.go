@@ -24,13 +24,13 @@ type ExplainXkcd struct {
 }
 
 type Comic struct {
-	Title       string    `json:"title"`
-	Number      int       `json:"num"`
-	Alt         string    `json:"alt,omitempty"`
-	Transcript  string    `json:"transcript,omitempty"`
-	ImgUrl      string    `json:"img_url"`
-	Explanation string    `json:"explanation"`
-	Date        time.Time `json:"date"`
+	Title       string `json:"title"`
+	Number      int    `json:"num"`
+	Alt         string `json:"alt,omitempty"`
+	Transcript  string `json:"transcript,omitempty"`
+	ImgUrl      string `json:"img_url"`
+	Explanation string `json:"explanation"`
+	Date        int64  `json:"date"`
 }
 
 func NewComic(x XkcdComic, e ExplainXkcd) (*Comic, error) {
@@ -57,7 +57,7 @@ func NewComic(x XkcdComic, e ExplainXkcd) (*Comic, error) {
 		Transcript:  x.Transcript,
 		ImgUrl:      x.ImgUrl,
 		Explanation: e.Explanation,
-		Date:        date,
+		Date:        date.Unix(),
 	}
 
 	return c, nil

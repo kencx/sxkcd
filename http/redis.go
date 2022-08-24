@@ -9,6 +9,27 @@ import (
 	"github.com/kencx/rkcd/data"
 )
 
+// Result is identical to data.Comic but excludes the unnecessary
+// transcript and explain attributes that are not rendered but
+// usually very large
+type Result struct {
+	Title  string `json:"title"`
+	Number int    `json:"num"`
+	Alt    string `json:"alt,omitempty"`
+	ImgUrl string `json:"img_url"`
+	Date   int64  `json:"date"`
+}
+
+func comicToResult(c *data.Comic) *Result {
+	return &Result{
+		Title:  c.Title,
+		Number: c.Number,
+		Alt:    c.Alt,
+		ImgUrl: c.ImgUrl,
+		Date:   c.Date,
+	}
+}
+
 func (s *Server) Index() error {
 	s.rdb.Do(s.ctx,
 		"FT.CREATE", "comics", "ON", "JSON", "PREFIX", "1", "comic:",
@@ -17,7 +38,7 @@ func (s *Server) Index() error {
 		"$.alt", "AS", "alt", "TEXT", "WEIGHT", "2",
 		"$.transcript", "AS", "transcript", "TEXT",
 		"$.explanation", "AS", "explanation", "TEXT", "WEIGHT", "1",
-		// "$.date", "AS", "date", "TEXT",
+		"$.date", "AS", "date", "NUMERIC",
 	)
 
 	pipe := s.rdb.Pipeline()
@@ -33,13 +54,13 @@ func (s *Server) Index() error {
 
 	_, err := pipe.Exec(s.ctx)
 	if err != nil {
-		return fmt.Errorf("failed to add execute: %v", err)
+		return fmt.Errorf("failed to index: %v", err)
 	}
 	return nil
 }
 
 // returns slice of first 100 IDs matching query
-func (s *Server) Search(query string) (int64, []*data.Comic, error) {
+func (s *Server) Search(query string) (int64, []*Result, error) {
 	values, err := s.rdb.Do(s.ctx,
 		"FT.SEARCH", "comics", query,
 		"RETURN", "0",
@@ -51,7 +72,7 @@ func (s *Server) Search(query string) (int64, []*data.Comic, error) {
 
 	count := values[0].(int64)
 
-	var results []*data.Comic
+	var results []*Result
 	for _, v := range values[1:] {
 		r := strings.TrimPrefix(v.(string), "comic:")
 		id, err := strconv.Atoi(r)
@@ -59,7 +80,7 @@ func (s *Server) Search(query string) (int64, []*data.Comic, error) {
 			return 0, nil, err
 		}
 		f := s.comics[id]
-		results = append(results, f)
+		results = append(results, comicToResult(f))
 	}
 
 	return count, results, nil

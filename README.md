@@ -2,7 +2,24 @@
 
 Yet another [XKCD](https://xkcd.com) search engine.
 
-<!-- ## Querying -->
+## Querying
+rkcd supports union, negation, prefix matching and filtering by custom date ranges
+```text
+# foo OR bar
+> foo|bar
+
+# exclude foo
+> -foo
+
+# prefix matching
+> foo*
+
+# filter by dates in ISO-8601 format
+> @date: 2022-01-01, 2022-02-01
+
+# from date to now
+> @date: 2022-08-01
+```
 
 ## Usage
 ```bash

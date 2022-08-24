@@ -1,6 +1,7 @@
 package data
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
@@ -23,7 +24,7 @@ func TestNewComic(t *testing.T) {
 		want := Comic{
 			Title:  "foo",
 			Number: 250,
-			Date:   expectedDate,
+			Date:   expectedDate.Unix(),
 		}
 
 		got, err := NewComic(testXkcdComic, testExplain)
@@ -31,7 +32,7 @@ func TestNewComic(t *testing.T) {
 			t.Fatalf("unexpected err: %v", err)
 		}
 
-		if !assertComicEqual(*got, want) {
+		if !reflect.DeepEqual(*got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
@@ -53,7 +54,7 @@ func TestNewComic(t *testing.T) {
 		want := Comic{
 			Title:  "foo",
 			Number: 250,
-			Date:   expectedDate,
+			Date:   expectedDate.Unix(),
 		}
 
 		got, err := NewComic(testXkcdComic, testExplain)
@@ -61,17 +62,8 @@ func TestNewComic(t *testing.T) {
 			t.Fatalf("unexpected err: %v", err)
 		}
 
-		if !assertComicEqual(*got, want) {
+		if !reflect.DeepEqual(*got, want) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
-}
-
-func assertComicEqual(got, want Comic) bool {
-	return got.Date.Equal(want.Date) &&
-		got.Title == want.Title &&
-		got.Number == want.Number &&
-		got.Alt == want.Alt &&
-		got.Transcript == want.Transcript &&
-		got.ImgUrl == want.ImgUrl
 }

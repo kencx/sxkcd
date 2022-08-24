@@ -1,7 +1,7 @@
 <script lang="ts" context="module">
 	export type Comic = {
 		title: string;
-		date: string;
+		date: number;
 		num: number;
 		img_url: string;
 		alt?: string;
@@ -10,13 +10,21 @@
 
 <script lang="ts">
 	export let result: Comic;
+
+	function parseDate(epoch: number): string {
+		var date = new Date(epoch * 1000);
+		var year = date.getFullYear();
+		var month = String(date.getMonth() + 1).padStart(2, "0");
+		var day = String(date.getDate()).padStart(2, "0");
+		return year + "-" + month + "-" + day;
+	}
 </script>
 
 <div class="result-container">
 	<hgroup class="titles">
 		<h4>{result.title}</h4>
 		<small>
-			<span>{(result.date).split('T')[0]}</span> |
+			<span>{parseDate(result.date)}</span> |
 			<span><a href="https://xkcd.com/{result.num}" target="_blank">#{result.num}</a></span> |
 			<span><a href="https://explainxkcd.com/{result.num}" target="_blank">explain</a></span>
 		</small>
