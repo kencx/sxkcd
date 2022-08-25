@@ -5,3 +5,5 @@ docker-compose.*
 *.md
 rkcd*
 ui/node_modules
+deploy/*
+

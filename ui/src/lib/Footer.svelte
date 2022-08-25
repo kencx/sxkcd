@@ -1,6 +1,3 @@
-<script lang="ts">
-</script>
-
 <footer class="container footer">
 	<p class="footer-text">
 		<span>

@@ -7,10 +7,16 @@ export type SearchResult = {
 	time: number;
 };
 
-function extractDateRange(input: string): string[] {
+function sanitize(input: string): string {
+	//TODO
+	return ""
+}
+
+function extractDateRange(input: string): string[] | null {
 	var rx = /@date:\s?([0-9]{4}\-[0-9]{2}\-[0-9]{2})\s?[,]?\s?([0-9]{4}\-[0-9]{2}\-[0-9]{2})?/g;
 	var regexp = new RegExp(rx);
-	return regexp.exec(input);
+	var matches = regexp.exec(input);
+	return matches
 }
 
 function epoch(dateStr: string): number {
@@ -18,40 +24,40 @@ function epoch(dateStr: string): number {
 	return Math.floor(ms / 1000);
 }
 
-export async function search(query: string): Promise<SearchResult | null> {
+export async function search(query: string, page: number): Promise<SearchResult | null> {
 	if (query == "") {
-		return null
+		return null;
 	}
 
-	query = sanitize(query)
+	// query = sanitize(query)
 
 	// handle date query
-	if (query.includes("@date")) {
-		var match = extractDateRange(query)
-		var from = epoch(match[1])
+	if (query.includes("@date:")) {
+		var match = extractDateRange(query);
 
-		if (match[2] == undefined) {
-			var to = Math.floor(Date.now() / 1000)
-		} else {
-			var to = epoch(match[2])
-		}
+		if (match != null) {
+			var from = epoch(match[1]);
+			var to = (match[2] == undefined) ? Math.floor(Date.now() / 1000) : epoch(match[2]);
 
-		if (!isNaN(from) && !isNaN(to)) {
-			query = `@date:[${from} ${to}]`
+			if (!isNaN(from) && !isNaN(to)) {
+				query = `@date:[${from} ${to}]`;
+			} else {
+				throw Error("invalid date format");
+			}
 		} else {
-			throw Error("invalid date format")
+			throw Error("invalid date format");
 		}
 	}
 
 	let abort = new AbortController();
 	try {
-		const response = await fetch("/search?q=" + query, {
+		var endpoint = `/search?q=${query}&page=${page}`;
+		const response = await fetch(endpoint, {
 			signal: abort.signal
 		});
 
 		if (!response.ok) {
-			const result = await response.json();
-			throw Error(`error: ${result.error}`);
+			throw Error(`${response.status} ${response.statusText}`);
 		}
 		const result = await response.json();
 		return {
@@ -62,12 +68,12 @@ export async function search(query: string): Promise<SearchResult | null> {
 	} catch (err: any) {
 		if (err.name == 'AbortError') {
 			console.log('fetch aborted');
-			return null
+			return null;
 		} else if (err.message.includes("Syntax error")) {
-			throw Error(`error: Invalid query format`)
+			throw Error(`invalid query format`);
 		} else {
 			console.error(err);
-			throw err;
+			throw Error(`something went wrong`);
 		}
 	}
 };

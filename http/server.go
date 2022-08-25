@@ -131,9 +131,16 @@ func (s *Server) Run(port int) error {
 
 func (s *Server) searchHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
+	page := r.URL.Query().Get("page")
 	start := time.Now()
 
-	count, results, err := s.Search(query)
+	if query == "" || page == "" {
+		log.Printf("invalid request parameters: %v", r.URL.Query())
+		errorResponse(w, fmt.Errorf("query and page parameters required"))
+		return
+	}
+
+	count, results, err := s.Search(query, page)
 	if err != nil {
 		log.Println(err)
 		errorResponse(w, err)

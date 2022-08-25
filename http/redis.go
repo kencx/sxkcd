@@ -9,6 +9,8 @@ import (
 	"github.com/kencx/rkcd/data"
 )
 
+const PAGE_SIZE = 20
+
 // Result is identical to data.Comic but excludes the unnecessary
 // transcript and explain attributes that are not rendered but
 // usually very large
@@ -59,12 +61,19 @@ func (s *Server) Index() error {
 	return nil
 }
 
-// returns slice of first 100 IDs matching query
-func (s *Server) Search(query string) (int64, []*Result, error) {
+// returns slice of 20 results per page
+func (s *Server) Search(query, page string) (int64, []*Result, error) {
+
+	p, err := strconv.Atoi(page)
+	if err != nil {
+		return 0, nil, fmt.Errorf("failed to parse page")
+	}
+	offset := strconv.Itoa((p - 1) * PAGE_SIZE)
+
 	values, err := s.rdb.Do(s.ctx,
 		"FT.SEARCH", "comics", query,
 		"RETURN", "0",
-		"LIMIT", "0", "100",
+		"LIMIT", offset, PAGE_SIZE,
 	).Slice()
 	if err != nil {
 		return 0, nil, fmt.Errorf("search query failed: %v", err)

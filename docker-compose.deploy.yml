@@ -1,9 +1,9 @@
 version: "3.6"
 services:
   redis:
-    image: redis/redis-stack-server:latest
     container_name: redis
     hostname: redis
+    image: redis/redis-stack-server:latest
     ports:
       - "6379:6379"
 
@@ -22,10 +22,22 @@ services:
     hostname: nginx
     image: nginx:1.23-alpine
     ports:
-      - "8080:80"
-      - "8081:443"
+      - "80:80"
+      - "443:443"
     volumes:
-      - "./deploy/conf:/etc/nginx/nginx.conf:ro"
+      - "./deploy/nginx.conf:/etc/nginx/nginx.conf:ro"
+      - "./deploy/certbot/www:/var/www/certbot/:ro"
+      - "./deploy/certbot/conf/:/etc/nginx/ssl/:ro"
     depends_on:
       - redis
       - app
+
+  certbot:
+    container_name: certbot
+    hostname: certbot
+    image: certbot/certbot:latest
+    volumes:
+      - "./deploy/certbot/www/:/var/www/certbot/:rw"
+      - "./deploy/certbot/conf/:/etc/letsencrypt/:rw"
+    depends_on:
+      - nginx

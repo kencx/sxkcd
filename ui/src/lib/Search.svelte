@@ -3,6 +3,7 @@
 	import { search } from './search'
 
 	let query: string = '';
+	let page: number = 1;
 	let timer: any;
 
 	const debounce = (e: any) => {
@@ -28,7 +29,7 @@
 		}
 	}
 
-	$: promise = search(query);
+	$: promise = search(query, page);
 </script>
 
 <svelte:window on:keydown={handleKeyDown}/>
