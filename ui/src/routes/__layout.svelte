@@ -4,15 +4,15 @@
 	import Footer from '$lib/Footer.svelte';
 	import '../app.css';
 
-	let theme: string;
+	let systemTheme: string;
 	let preferDark: boolean;
 
 	onMount(async() => {
 		preferDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
-		theme = preferDark ? "dark" : "light";
+		systemTheme = preferDark ? "dark" : "light";
 	});
 
-	$: checked = theme === "light" ? false : true;
+	$: checked = systemTheme === "light" ? false : true;
 </script>
 
 <svelte:head>
@@ -21,7 +21,7 @@
 	<link rel="stylesheet" href="/css/pico.min.css">
 </svelte:head>
 
-<Header currentTheme={theme} checked={checked}/>
+<Header {systemTheme} checked={checked}/>
 <main>
 	<slot />
 </main>
