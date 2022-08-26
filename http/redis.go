@@ -36,9 +36,9 @@ func (s *Server) Index() error {
 	s.rdb.Do(s.ctx,
 		"FT.CREATE", "comics", "ON", "JSON", "PREFIX", "1", "comic:",
 		"SCHEMA",
-		"$.title", "AS", "title", "TEXT", "WEIGHT", "3",
-		"$.alt", "AS", "alt", "TEXT", "WEIGHT", "2",
-		"$.transcript", "AS", "transcript", "TEXT",
+		"$.title", "AS", "title", "TEXT", "WEIGHT", "50",
+		"$.alt", "AS", "alt", "TEXT", "WEIGHT", "10",
+		"$.transcript", "AS", "transcript", "TEXT", "WEIGHT", "5",
 		"$.explanation", "AS", "explanation", "TEXT", "WEIGHT", "1",
 		"$.date", "AS", "date", "NUMERIC",
 	)

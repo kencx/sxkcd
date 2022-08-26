@@ -25,8 +25,9 @@ runcmd:
   - sed -i -e '/^PasswordAuthentication/s/^.*$/PasswordAuthentication no/' /etc/ssh/sshd_config
   - sed -i -e '/^MaxAuthTries/s/^.*$/MaxAuthTries 3/' /etc/ssh/sshd_config
   - systemctl restart sshd
-  - ufw allow 22,80,443 proto tcp
+  - ufw allow 22
+  - ufw allow 80
+  - ufw allow 443
   - ufw enable
-  - fail2ban-client start
 
 final_message: "The system is ready after $UPTIME seconds"

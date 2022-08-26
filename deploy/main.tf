@@ -34,6 +34,11 @@ data "digitalocean_sizes" "main" {
   }
 
   filter {
+    key    = "memory"
+    values = [1024]
+  }
+
+  filter {
     key    = "regions"
     values = ["nyc1"]
   }
@@ -50,12 +55,12 @@ resource "digitalocean_ssh_key" "main" {
 }
 
 resource "digitalocean_droplet" "app" {
-  image      = "ubuntu-20-04-x64"
-  name       = "webserver"
-  region     = "nyc1"
-  size       = element(data.digitalocean_sizes.main.sizes, 0).slug
-  monitoring = true
-  ssh_keys   = [digitalocean_ssh_key.main.fingerprint]
+  image             = "ubuntu-20-04-x64"
+  name              = "webserver"
+  region            = "nyc1"
+  size              = element(data.digitalocean_sizes.main.sizes, 0).slug
+  monitoring        = true
+  ssh_keys          = [digitalocean_ssh_key.main.fingerprint]
   user_data         = file("./cloud-config")
   graceful_shutdown = true
 }
