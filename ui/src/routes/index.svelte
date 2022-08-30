@@ -12,7 +12,7 @@
 	</div>
 
 	<div class="desc">
-		<p>Blazing fast <a class="contrast" href="https://xkcd.com">xkcd</a> search engine</p>
+		<p>Search for that <a class="contrast" href="https://xkcd.com" alt="xkcd">xkcd</a> you swear you remember...</p>
 	</div>
 
 	<Search/>
@@ -34,7 +34,7 @@
 }
 
 .title h1 {
-	font-size: 3.5rem;
+	font-size: 3rem;
 	margin-bottom: 0;
 }
 
@@ -47,7 +47,8 @@
 	text-decoration: underline;
 }
 
-.desc {
+.desc p {
+	font-size: 0.9rem;
 	/* margin: 1rem; */
 	/* line-height: 1rem; */
 }

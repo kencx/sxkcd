@@ -6,6 +6,16 @@
 	let page: number = 1;
 	let timer: any;
 
+	let examples = [
+		{ query: "foo|bar", description: "foo or bar", },
+		{ query: "-foo", description: "Exclude foo", },
+		{ query: "foo*", description: "Any words that begins with foo", },
+		{ query: "#420", description: "Filter by comic number", },
+		{ query: "#420-690", description: "Between number range", },
+		{ query: "@date: 2022-01-19", description: "From date to present", },
+		{ query: "@date: 2022-01-01, 2022-08-01", description: "Between date range", },
+	]
+
 	const debounce = (e: any) => {
 		clearTimeout(timer);
 		timer = setTimeout(() => {
@@ -35,6 +45,28 @@
 <svelte:window on:keydown={handleKeyDown}/>
 
 <div class="container search">
+	<div class="syntax">
+		<details>
+			<summary>Examples</summary>
+			<table>
+				<thead>
+					<tr>
+						<th>Query</th>
+						<th>Description</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each examples as example}
+					<tr>
+						<th><code>{example.query}</code></th>
+						<th>{example.description}</th>
+					</tr>
+					{/each}
+				</tbody>
+			</table>
+		</details>
+	</div>
+
 	<label for="search-bar" class="sr-only">Search</label>
 	<input id="search-bar" type="search"
 		autocomplete="off"
@@ -56,11 +88,26 @@
 			</div>
 		{/if}
 	{:catch error}
-		<small class="error">An error occured: {error.message}</small>
+		<small class="search-message error">An error occured: {error.message}</small>
 	{/await}
 </div>
 
 <style>
+.syntax details {
+	font-size: 0.8rem;
+	border-bottom: none;
+	width: 80%;
+	margin: auto;
+}
+
+.syntax table {
+	margin-bottom: 0%;
+}
+
+.syntax th {
+	font-size: 0.8rem;
+}
+
 .search {
 	width: 75%;
 }
@@ -82,12 +129,16 @@
 }
 
 .error {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
 	color: red;
 	margin-top: 0.5rem;
+	margin: auto;
+}
+
+@media (min-width:320px) and (max-width:640px) {
+	.syntax details {
+		width: 100%;
+		margin: none;
+	}
 }
 
 .sr-only {

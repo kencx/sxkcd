@@ -17,7 +17,7 @@
 
 <svelte:head>
 	<title>rkcd</title>
-	<meta name="description" content="A xkcd search engine" />
+	<meta name="description" content="Search for that xkcd you swear you remember" />
 	<link rel="stylesheet" href="/css/pico.min.css">
 </svelte:head>
 

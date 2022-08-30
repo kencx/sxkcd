@@ -11,6 +11,11 @@
 <script lang="ts">
 	export let result: Comic;
 
+	// handle no alt text
+	if (result.alt == undefined) {
+		result.alt = "";
+	}
+
 	function parseDate(epoch: number): string {
 		var date = new Date(epoch * 1000);
 		var year = date.getFullYear();
@@ -30,7 +35,7 @@
 		</small>
 	</hgroup>
 	<div class="img">
-		<img src={result.img_url} alt=""/>
+		<img src={result.img_url} alt="Comic {result.num}" loading="lazy"/>
 	</div>
 	<div class="alt">
 		<p>{result.alt}</p>
