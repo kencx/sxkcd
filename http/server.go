@@ -140,6 +140,10 @@ func (s *Server) searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	query = sanitize(query)
+	query = handleNumSearch(query)
+	query = handleDateSearch(query)
+
 	count, results, err := s.Search(query, page)
 	if err != nil {
 		log.Println(err)
@@ -147,7 +151,7 @@ func (s *Server) searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	timeTaken := time.Since(start)
-	log.Printf("Query produced %d results in %vs: %s", count, timeTaken.Seconds(), query)
+	log.Printf("Query produced %d results in %.3fms: %s", count, timeTaken.Seconds()*1000, query)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

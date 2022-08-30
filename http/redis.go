@@ -40,6 +40,7 @@ func (s *Server) Index() error {
 		"$.alt", "AS", "alt", "TEXT", "WEIGHT", "10",
 		"$.transcript", "AS", "transcript", "TEXT", "WEIGHT", "5",
 		"$.explanation", "AS", "explanation", "TEXT", "WEIGHT", "1",
+		"$.num", "AS", "num", "NUMERIC",
 		"$.date", "AS", "date", "NUMERIC",
 	)
 
