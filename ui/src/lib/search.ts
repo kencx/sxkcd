@@ -7,7 +7,7 @@ export type SearchResult = {
 	time: number;
 };
 
-export async function search(query: string, page: number): Promise<SearchResult | null> {
+export async function search(query: string): Promise<SearchResult | null> {
 	if (query == "") {
 		return null;
 	}
@@ -15,7 +15,7 @@ export async function search(query: string, page: number): Promise<SearchResult 
 
 	let abort = new AbortController();
 	try {
-		var endpoint = `/search?q=${query}&page=${page}`;
+		var endpoint = `/search?q=${query}`;
 		const response = await fetch(endpoint, {
 			signal: abort.signal
 		});

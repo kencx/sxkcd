@@ -9,12 +9,11 @@ import (
 	"github.com/kencx/rkcd/data"
 )
 
-const PAGE_SIZE = 20
-
 // Result is identical to data.Comic but excludes the unnecessary
 // transcript and explain attributes that are not rendered but
 // usually very large
 type Result struct {
+	Id     int    `json:"id"`
 	Title  string `json:"title"`
 	Number int    `json:"num"`
 	Alt    string `json:"alt,omitempty"`
@@ -22,8 +21,9 @@ type Result struct {
 	Date   int64  `json:"date"`
 }
 
-func comicToResult(c *data.Comic) *Result {
+func comicToResult(i int, c *data.Comic) *Result {
 	return &Result{
+		Id:     i,
 		Title:  c.Title,
 		Number: c.Number,
 		Alt:    c.Alt,
@@ -62,19 +62,12 @@ func (s *Server) Index() error {
 	return nil
 }
 
-// returns slice of 20 results per page
-func (s *Server) Search(query, page string) (int64, []*Result, error) {
-
-	p, err := strconv.Atoi(page)
-	if err != nil {
-		return 0, nil, fmt.Errorf("failed to parse page")
-	}
-	offset := strconv.Itoa((p - 1) * PAGE_SIZE)
-
+// returns slice of 100 results
+func (s *Server) Search(query string) (int64, []*Result, error) {
 	values, err := s.rdb.Do(s.ctx,
 		"FT.SEARCH", "comics", query,
 		"RETURN", "0",
-		"LIMIT", offset, PAGE_SIZE,
+		"LIMIT", 0, 100,
 	).Slice()
 	if err != nil {
 		return 0, nil, fmt.Errorf("search query failed: %v", err)
@@ -83,14 +76,14 @@ func (s *Server) Search(query, page string) (int64, []*Result, error) {
 	count := values[0].(int64)
 
 	var results []*Result
-	for _, v := range values[1:] {
+	for i, v := range values[1:] {
 		r := strings.TrimPrefix(v.(string), "comic:")
 		id, err := strconv.Atoi(r)
 		if err != nil {
 			return 0, nil, err
 		}
 		f := s.comics[id]
-		results = append(results, comicToResult(f))
+		results = append(results, comicToResult(i, f))
 	}
 
 	return count, results, nil

@@ -14,10 +14,16 @@ rkcd supports union, negation, prefix matching and filtering by custom date rang
 # prefix matching
 > foo*
 
+# filter by comic number
+> #420
+
+# comic number range
+> #420-425
+
 # filter by dates in ISO-8601 format
 > @date: 2022-01-01, 2022-02-01
 
-# from date to now
+# from date to present
 > @date: 2022-08-01
 ```
 

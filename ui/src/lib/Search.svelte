@@ -1,20 +1,10 @@
 <script lang="ts">
 	import Comic from '$lib/Comic.svelte';
+	import ExampleTable from './ExampleTable.svelte';
+	import Select from './Select.svelte';
 	import { search } from './search'
 
-	let query: string = '';
-	let page: number = 1;
 	let timer: any;
-
-	let examples = [
-		{ query: "foo|bar", description: "foo or bar", },
-		{ query: "-foo", description: "Exclude foo", },
-		{ query: "foo*", description: "Any words that begins with foo", },
-		{ query: "#420", description: "Filter by comic number", },
-		{ query: "#420-690", description: "Between number range", },
-		{ query: "@date: 2022-01-19", description: "From date to present", },
-		{ query: "@date: 2022-01-01, 2022-08-01", description: "Between date range", },
-	]
 
 	const debounce = (e: any) => {
 		clearTimeout(timer);
@@ -39,85 +29,109 @@
 		}
 	}
 
-	$: promise = search(query, page);
+	const PAGE_SIZE = 20;
+	let query: string = '';
+	let sorted = 'relevancy';
+	let currentItems = PAGE_SIZE;
+
+	function sortComics(comics: Comic[], sorted: string) {
+		if (comics.length) {
+
+			if (sorted == 'oldest') {
+				comics = comics.sort(function(a,b) {
+					return a.num - b.num
+				});
+			} else if (sorted == 'newest') {
+				comics = comics.sort(function(a,b) {
+					return b.num - a.num
+				});
+			} else if (query.startsWith("@date:") || query.startsWith("#")) {
+				comics = comics.sort(function(a,b) {
+					return a.num - b.num
+				});
+			} else {
+			// original sorting
+				comics = comics.sort(function(a,b) {
+					return a.id - b.id
+				});
+			}
+		}
+		return comics;
+	}
+
+	$: promise = search(query);
+	$: comics = promise
+			.then(result => (result != null) ? sortComics(result.comics, sorted) : null)
 </script>
 
 <svelte:window on:keydown={handleKeyDown}/>
 
 <div class="container search">
-	<div class="syntax">
-		<details>
-			<summary>Examples</summary>
-			<table>
-				<thead>
-					<tr>
-						<th>Query</th>
-						<th>Description</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each examples as example}
-					<tr>
-						<th><code>{example.query}</code></th>
-						<th>{example.description}</th>
-					</tr>
-					{/each}
-				</tbody>
-			</table>
-		</details>
-	</div>
+	<ExampleTable/>
 
 	<label for="search-bar" class="sr-only">Search</label>
 	<input id="search-bar" type="search"
 		autocomplete="off"
 		placeholder="Search..."
+		on:change={() => {sorted = 'relevancy'; currentItems = PAGE_SIZE}}
 		on:input|preventDefault={debounce}
 	/>
 
-	{#await promise then data}
-		{#if data != null}
-			<div class="search-message">
-				<p>found <span class="contrast">{data.count}</span> results in {(data.time*1000).toFixed(3)}ms</p>
+	{#await promise then result}
+		{#if result != null}
+
+			<div class="options">
+				<div class="search-message">
+					<p>found <span class="contrast">{result.count}</span> results in {(result.time*1000).toFixed(3)}ms</p>
+				</div>
+				<Select bind:selected={sorted}/>
 			</div>
+
+			<!-- render comics -->
 			<div>
-				{#if data.comics}
-					{#each data.comics as comic}
+			{#await comics then data}
+				{#if data != null}
+
+					{#each data.slice(0, currentItems) as comic}
 						<Comic result={comic}/>
 					{/each}
+
+					<!-- load more button -->
+					{#if currentItems < data.length}
+						<button class="secondary outline load-more" on:click={() => currentItems += PAGE_SIZE}>
+							Show More
+						</button>
+					{/if}
 				{/if}
+			{/await}
 			</div>
 		{/if}
+
 	{:catch error}
-		<small class="search-message error">An error occured: {error.message}</small>
+		<small class="error">An error occured: {error.message}</small>
 	{/await}
 </div>
 
 <style>
-.syntax details {
-	font-size: 0.8rem;
-	border-bottom: none;
-	width: 80%;
-	margin: auto;
-}
-
-.syntax table {
-	margin-bottom: 0%;
-}
-
-.syntax th {
-	font-size: 0.8rem;
-}
-
 .search {
 	width: 75%;
 }
 
-.search-message {
+.options {
 	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	margin-bottom: 1.5rem;
+	justify-content: space-between;
+}
+
+.load-more {
+	font-size: 0.8rem;
+	width: 127px;
+	margin-left: auto;
+	margin-right: 0;
+}
+
+.search-message {
+	margin-top: 0.65rem;
+	margin-left: 0.5rem;
 }
 
 .search-message p {
@@ -126,18 +140,29 @@
 
 .contrast {
 	color: orange;
+	font-weight: bold;
 }
 
 .error {
-	color: red;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 	margin-top: 0.5rem;
 	margin: auto;
+	font-size: 0.8rem;
+	color: red;
 }
 
 @media (min-width:320px) and (max-width:640px) {
-	.syntax details {
-		width: 100%;
-		margin: none;
+	.options {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.load-more {
+		margin: 0 auto;
 	}
 }
 

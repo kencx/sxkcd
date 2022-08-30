@@ -1,5 +1,6 @@
 <script lang="ts" context="module">
 	export type Comic = {
+		id: number;
 		title: string;
 		date: number;
 		num: number;
