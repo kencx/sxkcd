@@ -9,7 +9,8 @@ services:
 
   app:
     container_name: app
-    image: rkcd:latest
+    hostname: app
+    image: sxkcd:latest
     build: .
     depends_on:
       - redis

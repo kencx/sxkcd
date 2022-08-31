@@ -1,5 +1,5 @@
 {
-	"name": "rkcd",
+	"name": "sxkcd",
 	"version": "0.1.0",
 	"scripts": {
 		"dev": "vite dev --host 0.0.0.0",

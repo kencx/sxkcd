@@ -19,6 +19,6 @@ RUN go vet -v && go build -v .
 FROM alpine:3.15
 WORKDIR /
 # requires buildkit: DOCKER_BUILDKIT=1
-COPY --from=builder --chmod=+x /app/rkcd /app/entrypoint.sh ./
+COPY --from=builder --chmod=+x /app/sxkcd /app/entrypoint.sh ./
 EXPOSE 6380
 ENTRYPOINT [ "/entrypoint.sh" ]

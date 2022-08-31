@@ -11,7 +11,7 @@ dbuild: docker-compose.yml
 	docker-compose up -d --build
 
 run:
-	./rkcd
+	./sxkcd
 
 test:
 	go test -race ./data
@@ -26,4 +26,4 @@ destroy:
 	cd deploy && terraform destroy
 
 clean:
-	rm -rf rkcd
+	rm -rf sxkcd

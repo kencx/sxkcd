@@ -8,7 +8,7 @@
 
 <div class="container center">
 	<div class="title">
-		<h1><a class="contrast" href="/"><span>r</span>kcd</a></h1>
+		<h1><a class="contrast" href="/">sxkcd</a></h1>
 	</div>
 
 	<div class="desc">

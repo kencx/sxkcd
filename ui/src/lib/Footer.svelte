@@ -1,8 +1,8 @@
 <footer class="container footer">
 	<p class="footer-text">
 		<span>
-			Licensed <a target="_blank" href="https://github.com/kencx/rkcd/blob/master/LICENSE">MIT</a>
-			| <a target="_blank" href="https://github.com/kencx/rkcd">kencx</a>
+			Licensed <a target="_blank" href="https://github.com/kencx/sxkcd/blob/master/LICENSE">MIT</a>
+			| <a target="_blank" href="https://github.com/kencx/sxkcd">kencx</a>
 		</span>
 			<br>
 			All source material is licensed under <a href="https://creativecommons.org/licenses/by-nc/2.5/">CC BY</a>

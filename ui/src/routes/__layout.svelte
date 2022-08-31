@@ -16,7 +16,7 @@
 </script>
 
 <svelte:head>
-	<title>rkcd</title>
+	<title>sxkcd - A xkcd search engine</title>
 	<meta name="description" content="Search for that xkcd you swear you remember" />
 	<link rel="stylesheet" href="/css/pico.min.css">
 </svelte:head>

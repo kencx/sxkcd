@@ -47,4 +47,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/rkcd:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/sxkcd:latest

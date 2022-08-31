@@ -8,8 +8,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/kencx/rkcd/data"
-	"github.com/kencx/rkcd/http"
+	"github.com/kencx/sxkcd/data"
+	"github.com/kencx/sxkcd/http"
 )
 
 //go:embed all:ui/build
@@ -18,7 +18,7 @@ var static embed.FS
 var version string
 
 const (
-	help = `usage: rkcd [server|download] [OPTIONS] [FILE]
+	help = `usage: sxkcd [server|download] [OPTIONS] [FILE]
 
   Options:
     -v, --version   Version info
