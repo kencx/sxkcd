@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -18,14 +17,11 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/kencx/rkcd/data"
 )
 
 type Server struct {
-	ctx context.Context
-	rdb redis.Client
-
-	comics  map[int]*data.Comic
+	ctx     context.Context
+	rdb     redis.Client
 	Static  embed.FS
 	Version string
 }
@@ -48,10 +44,7 @@ func NewServer(uri, version string, static embed.FS) (*Server, error) {
 }
 
 func (s *Server) ReadFile(filename string) error {
-	var (
-		body []byte
-		err  error
-	)
+	var rc io.ReadCloser
 
 	if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
 		response, err := http.Get(filename)
@@ -59,30 +52,50 @@ func (s *Server) ReadFile(filename string) error {
 			return fmt.Errorf("failed to get %s: %v", filename, err)
 		}
 		defer response.Body.Close()
+		rc = response.Body
 
-		body, err = io.ReadAll(response.Body)
-		if err != nil {
-			return fmt.Errorf("failed to read body: %v", err)
-		}
 	} else {
-		body, err = ioutil.ReadFile(filename)
+		f, err := os.Open(filename)
 		if err != nil {
 			return fmt.Errorf("failed to read %s: %v", filename, err)
 		}
+		defer f.Close()
+		rc = f
 	}
 
-	if err := json.Unmarshal(body, &s.comics); err != nil {
-		return fmt.Errorf("ReadFile: failed to unmarshal data: %v", err)
+	// Decode JSON to RawMessage to be directly indexed as a ReJSON document
+	dec := json.NewDecoder(rc)
+	t, err := dec.Token()
+	if err != nil {
+		return fmt.Errorf("token err %v", err)
+	}
+	if t.(json.Delim) != '{' {
+		return fmt.Errorf("not json object")
+	}
+
+	var comics []json.RawMessage
+	for dec.More() {
+		_, err = dec.Token()
+		if err != nil {
+			return fmt.Errorf("key err %v", err)
+		}
+
+		var val json.RawMessage
+		err = dec.Decode(&val)
+		if err != nil {
+			return fmt.Errorf("decode err %v", err)
+		}
+		comics = append(comics, val)
 	}
 
 	start := time.Now()
-	log.Printf("Starting indexing of %d comics\n", len(s.comics))
+	log.Printf("Starting indexing of %d comics\n", len(comics))
 
-	err = s.Index()
+	err = s.Index(comics)
 	if err != nil {
 		return err
 	}
-	log.Printf("Successfully indexed %d comics in %v\n", len(s.comics), time.Since(start))
+	log.Printf("Successfully indexed %d comics in %v\n", len(comics), time.Since(start))
 	return nil
 }
 

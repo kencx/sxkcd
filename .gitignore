@@ -1,4 +1,5 @@
 rkcd*
+pprof/*
 node_modules
 .svelte-kit
 build

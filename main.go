@@ -95,7 +95,11 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-				fmt.Printf("Comic #%d: %v", num, comic)
+				b, err := json.Marshal(comic)
+				if err != nil {
+					log.Fatalf("failed to marshal comic: %v", err)
+				}
+				fmt.Println(string(b))
 				os.Exit(0)
 			}
 

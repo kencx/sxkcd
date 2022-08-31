@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
-
-	"github.com/kencx/rkcd/data"
 )
 
 // Result is identical to data.Comic but excludes the unnecessary
@@ -21,18 +18,7 @@ type Result struct {
 	Date   int64  `json:"date"`
 }
 
-func comicToResult(i int, c *data.Comic) *Result {
-	return &Result{
-		Id:     i,
-		Title:  c.Title,
-		Number: c.Number,
-		Alt:    c.Alt,
-		ImgUrl: c.ImgUrl,
-		Date:   c.Date,
-	}
-}
-
-func (s *Server) Index() error {
+func (s *Server) Index(documents []json.RawMessage) error {
 	s.rdb.Do(s.ctx,
 		"FT.CREATE", "comics", "ON", "JSON", "PREFIX", "1", "comic:",
 		"SCHEMA",
@@ -45,14 +31,9 @@ func (s *Server) Index() error {
 	)
 
 	pipe := s.rdb.Pipeline()
-	for i, c := range s.comics {
-		j, err := json.Marshal(&c)
-		if err != nil {
-			return fmt.Errorf("failed to marshal comic %d: %v", c.Number, err)
-		}
-
+	for i, d := range documents {
 		id := strconv.Itoa(i)
-		pipe.Do(s.ctx, "JSON.SET", "comic:"+id, "$", j)
+		pipe.Do(s.ctx, "JSON.SET", "comic:"+id, "$", string(d))
 	}
 
 	_, err := pipe.Exec(s.ctx)
@@ -66,7 +47,6 @@ func (s *Server) Index() error {
 func (s *Server) Search(query string) (int64, []*Result, error) {
 	values, err := s.rdb.Do(s.ctx,
 		"FT.SEARCH", "comics", query,
-		"RETURN", "0",
 		"LIMIT", 0, 100,
 	).Slice()
 	if err != nil {
@@ -77,14 +57,25 @@ func (s *Server) Search(query string) (int64, []*Result, error) {
 
 	var results []*Result
 	for i, v := range values[1:] {
-		r := strings.TrimPrefix(v.(string), "comic:")
-		id, err := strconv.Atoi(r)
-		if err != nil {
-			return 0, nil, err
-		}
-		f := s.comics[id]
-		results = append(results, comicToResult(i, f))
-	}
 
+		// skip comic:[id]
+		if _, ok := v.(string); ok {
+			continue
+		}
+
+		// ["$", data]
+		sl, ok := v.([]interface{})
+		if !ok {
+			return 0, nil, fmt.Errorf("search result could not be parsed")
+		}
+		b := []byte(sl[1].(string))
+
+		var res Result
+		if err := json.Unmarshal(b, &res); err != nil {
+			return 0, nil, fmt.Errorf("search result could not be unmarshaled: %v", err)
+		}
+		res.Id = i
+		results = append(results, &res)
+	}
 	return count, results, nil
 }
