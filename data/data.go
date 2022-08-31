@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -231,10 +232,30 @@ func (c Client) getExplainEndpoint(number int) (string, error) {
 	return c.explainUrl.String(), nil
 }
 
-// TODO remove incomplete tag
 func extractExplanation(wikitext string) string {
-	s := strings.Split(wikitext, "==")
-	result := strings.TrimSpace(s[2])
-	result = strings.ToValidUTF8(result, " ")
+
+	// extract only first heading (Explanation)
+	headingRx := regexp.MustCompile(`\n==[\w\d\s]+==`)
+	result := headingRx.Split(wikitext, -1)[1]
+
+	// remove all http/https URLs
+	urlRx := regexp.MustCompile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+	result = urlRx.ReplaceAllLiteralString(result, "")
+
+	// remove wikitables
+	// tableRx := regexp.MustCompile(`\{\|[^()]*\|\}`)
+	tableRx := regexp.MustCompile(`\{\|(?s).*\|\}`)
+	result = tableRx.ReplaceAllLiteralString(result, "")
+
+	// remove math
+	mathRx := regexp.MustCompile(`:*\<math\>(?s).*\<\/math\>`)
+	result = mathRx.ReplaceAllLiteralString(result, "")
+
+	// remove incomplete tag
+	incompleteRx := regexp.MustCompile(`\{\{incomplete\|(.*)\}\}`)
+	result = incompleteRx.ReplaceAllLiteralString(result, "")
+
+	result = strings.TrimSpace(result)
+	result = strings.ToValidUTF8(result, "")
 	return result
 }
