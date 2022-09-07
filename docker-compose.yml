@@ -12,6 +12,8 @@ services:
     hostname: app
     image: sxkcd:latest
     build: .
+    ports:
+      - "6380:6380"
     depends_on:
       - redis
     networks:
