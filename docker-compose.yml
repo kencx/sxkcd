@@ -4,14 +4,21 @@ services:
     image: redis/redis-stack-server:latest
     container_name: redis
     hostname: redis
-    ports:
-      - "6379:6379"
+    networks:
+      - sxkcd
 
   app:
     container_name: app
     image: rkcd:latest
     build: .
-    ports:
-      - "6380:6380"
     depends_on:
       - redis
+    networks:
+      - proxy
+      - sxkcd
+
+networks:
+  proxy:
+    external: true
+  sxkcd:
+    name: sxkcd
