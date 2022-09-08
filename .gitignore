@@ -1,4 +1,5 @@
 sxkcd*
+app_data/*
 pprof/*
 node_modules
 .svelte-kit

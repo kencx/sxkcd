@@ -12,8 +12,12 @@ services:
     hostname: app
     image: sxkcd:latest
     build: .
+    # to download new data
+    # entrypoint: ["./sxkcd", "download", "-f", "/data/comics.json"]
     ports:
       - "6380:6380"
+    volumes:
+      - "./app_data:/data"
     depends_on:
       - redis
     networks:
