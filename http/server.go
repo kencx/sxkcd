@@ -30,7 +30,10 @@ func NewServer(uri, version string, static embed.FS) (*Server, error) {
 	s := &Server{
 		ctx: context.Background(),
 		rdb: *redis.NewClient(&redis.Options{
-			Addr: uri,
+			Addr:         uri,
+			DialTimeout:  20 * time.Second,
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 5 * time.Second,
 		}),
 		Version: version,
 		Static:  static,
