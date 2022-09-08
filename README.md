@@ -10,11 +10,13 @@ and RediJSON, it provides full-text search capabilities with an extensive query 
 With a relatively small dataset, it processes queries really quickly in <40ms.
 
 The frontend is a reactive static site built with Svelte. It fetches responses to your
-queries from the backend Go server which provides a query API for the in-memory database.
+queries from the backend Go server, which provides a query API for the in-memory database.
 
 Try it out [here](https://sxkcd.cheo.dev)!
 
->sxkcd is entirely inspired by [classes.wtf](https://github.com/ekzhang/classes.wtf)
+>To update the database, a cronjob runs `scripts/refresh.sh` every Tuesday, Thursday and
+>Saturday morning to download and reindex the latest dataset. So expect some delay for
+>the newest comic.
 
 ## Usage
 ```bash
@@ -130,6 +132,7 @@ $ ./sxkcd server --port 6380 --redis localhost:6379 --file data/comics.json
 
 Visit `localhost:5173`.
 
-## License
+## Acknowledgements
+>sxkcd is entirely inspired by [classes.wtf](https://github.com/ekzhang/classes.wtf)
 
 [MIT](LICENSE)

@@ -3,7 +3,7 @@
 .gitignore
 docker-compose.*
 *.md
-rkcd*
+sxkcd*
 ui/node_modules
 deploy/*
 
