@@ -6,13 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -41,57 +39,30 @@ func NewServer(uri, version string, static embed.FS) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) ReadFile(filename string) error {
-	var rc io.ReadCloser
-
-	if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
-		response, err := http.Get(filename)
-		if err != nil {
-			return fmt.Errorf("failed to get %s: %v", filename, err)
-		}
-		defer response.Body.Close()
-		rc = response.Body
-
-	} else {
-		f, err := os.Open(filename)
-		if err != nil {
-			return fmt.Errorf("failed to read %s: %v", filename, err)
-		}
-		defer f.Close()
-		rc = f
+func (s *Server) Initialize(filename string, reindex bool) error {
+	if filename == "" {
+		return fmt.Errorf("no filename provided")
 	}
 
-	// Decode JSON to RawMessage to be directly indexed as a ReJSON document
-	dec := json.NewDecoder(rc)
-	t, err := dec.Token()
+	comics, err := decodeFile(filename)
 	if err != nil {
-		return fmt.Errorf("token err %v", err)
-	}
-	if t.(json.Delim) != '{' {
-		return fmt.Errorf("not json object")
-	}
-
-	var comics []json.RawMessage
-	for dec.More() {
-		_, err = dec.Token()
-		if err != nil {
-			return fmt.Errorf("key err %v", err)
-		}
-
-		var val json.RawMessage
-		err = dec.Decode(&val)
-		if err != nil {
-			return fmt.Errorf("decode err %v", err)
-		}
-		comics = append(comics, val)
+		return err
 	}
 
 	start := time.Now()
-	log.Printf("Starting indexing of %d comics\n", len(comics))
+	log.Printf("Indexing %d comics\n", len(comics))
 
 	err = s.rds.CreateIndex()
 	if err != nil {
-		return err
+		if err.Error() == "Index already exists" {
+			if reindex {
+				s.rds.Reindex()
+			} else {
+				return fmt.Errorf("%v, include --reindex to replace data", err)
+			}
+		} else {
+			return err
+		}
 	}
 
 	// comics are not guaranteed to be in order. This depends entirely on the order in
@@ -100,7 +71,26 @@ func (s *Server) ReadFile(filename string) error {
 	if err != nil {
 		return err
 	}
+
 	log.Printf("Successfully indexed %d comics in %v\n", len(comics), time.Since(start))
+	return nil
+}
+
+func (s *Server) Verify() error {
+	ok, err := s.rds.CheckIndex()
+	if err != nil {
+		return err
+	}
+
+	count, err := s.rds.Count()
+	if err != nil {
+		return err
+	}
+	if count > 0 && ok {
+		log.Printf("Found existing index and %d comics", count)
+	} else {
+		return fmt.Errorf("no index or comics found, please provide a file")
+	}
 	return nil
 }
 

@@ -8,7 +8,7 @@ import (
 
 func TestNewComic(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		testXkcdComic := XkcdComic{
+		testXkcd := Xkcd{
 			Title:  "foo",
 			Number: 250,
 			Day:    "25",
@@ -27,7 +27,7 @@ func TestNewComic(t *testing.T) {
 			Date:   expectedDate.Unix(),
 		}
 
-		got, err := NewComic(testXkcdComic, testExplain)
+		got, err := NewComic(testXkcd, testExplain)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
@@ -38,7 +38,7 @@ func TestNewComic(t *testing.T) {
 	})
 
 	t.Run("parse date", func(t *testing.T) {
-		testXkcdComic := XkcdComic{
+		testXkcd := Xkcd{
 			Title:  "foo",
 			Number: 250,
 			Day:    "1",
@@ -57,7 +57,7 @@ func TestNewComic(t *testing.T) {
 			Date:   expectedDate.Unix(),
 		}
 
-		got, err := NewComic(testXkcdComic, testExplain)
+		got, err := NewComic(testXkcd, testExplain)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}

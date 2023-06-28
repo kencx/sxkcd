@@ -28,6 +28,7 @@ const (
     -f, --file      Read data from file
     -p, --port      Server port
     -r, --redis     Redis connection URI [host:port]
+	-i, --reindex   Reindex existing data with new file
 
   download:
     -l, --latest    Get latest comic number
@@ -43,6 +44,7 @@ func main() {
 		file        string
 		port        int
 		rds         string
+		reindex     bool
 
 		latest       bool
 		num          int
@@ -59,6 +61,8 @@ func main() {
 	serverCmd.IntVar(&port, "port", 6380, "port")
 	serverCmd.StringVar(&rds, "r", "redis:6379", "redis connection URI [host:port]")
 	serverCmd.StringVar(&rds, "redis", "redis:6379", "redis connection URI [host:port]")
+	serverCmd.BoolVar(&reindex, "i", false, "reindex with new file")
+	serverCmd.BoolVar(&reindex, "reindex", false, "reindex with new file")
 
 	downloadCmd := flag.NewFlagSet("download", flag.ExitOnError)
 	downloadCmd.BoolVar(&latest, "l", false, "get latest comic number")
@@ -88,7 +92,7 @@ func main() {
 			}
 
 			if num > 0 {
-				comic, err := c.RetrieveComic(num)
+				comic, err := c.Fetch(num)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -101,7 +105,7 @@ func main() {
 			}
 
 			if latest {
-				comic, err := c.RetrieveLatest()
+				comic, err := c.FetchLatestNum()
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -109,56 +113,43 @@ func main() {
 				os.Exit(0)
 			}
 
-			latestComicNum, err := c.RetrieveLatest()
-			if err != nil {
+			if err = c.FetchAllToFile(downloadFile); err != nil {
 				log.Fatal(err)
 			}
-
-			log.Printf("Retrieving %d comics from API", latestComicNum-1)
-			comics, err := c.RetrieveAllComics(latestComicNum)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			s, err := json.Marshal(comics)
-			if err != nil {
-				log.Fatalf("failed to marshal comics: %v", err)
-			}
-
-			if err := data.WriteToFile(downloadFile, s); err != nil {
-				log.Fatalf("failed to write to %s: %v", downloadFile, err)
-			}
-			log.Printf("%d comics downloaded to %s", latestComicNum-1, downloadFile)
 			os.Exit(0)
 
 		case "server":
 			serverCmd.Parse(args[1:])
 
+			if rds == "" {
+				log.Fatal("Redis connection URI must be provided")
+			}
+			if port <= 0 {
+				log.Fatalf("Invalid port: %v", port)
+			}
+
+			s, err := http.NewServer(rds, version, static)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if file != "" {
+				if err := s.Initialize(file, reindex); err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				if err := s.Verify(); err != nil {
+					log.Fatal(err)
+				}
+			}
+
+			if err := s.Run(port); err != nil {
+				log.Fatal(err)
+			}
+
 		default:
 			fmt.Print(help)
 			os.Exit(1)
 		}
-	}
-
-	if rds == "" {
-		log.Fatal("Redis connection URI must be provided")
-	}
-	if port <= 0 {
-		log.Fatalf("Invalid port: %v", port)
-	}
-
-	s, err := http.NewServer(rds, version, static)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// if file != "" {
-	// 	if err := s.ReadFile(file); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
-
-	if err := s.Run(port); err != nil {
-		log.Fatal(err)
 	}
 }

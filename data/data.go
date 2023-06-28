@@ -31,29 +31,30 @@ const (
 )
 
 var (
-	syntaxError           *json.SyntaxError
-	invalidUnmarshalError *json.InvalidUnmarshalError
+	syntaxErr           *json.SyntaxError
+	invalidUnmarshalErr *json.InvalidUnmarshalError
 )
 
 type Client struct {
-	Client      *http.Client
-	xkcdUrl     url.URL
-	explainUrl  url.URL
-	TimeOut     int
-	MaxBodySize int64
+	client      *http.Client
+	xkcd        url.URL
+	explain     url.URL
+	timeOut     int
+	maxBodySize int64
 }
 
-func NewClient(xkcdBaseUrl, explainBaseUrl string) (*Client, error) {
-	xu, err := url.Parse(xkcdBaseUrl)
+func NewClient(xkcdUrl, explainUrl string) (*Client, error) {
+	xu, err := url.Parse(xkcdUrl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse %s: %v", xkcdBaseUrl, err)
+		return nil, fmt.Errorf("failed to parse %s: %v", xkcdUrl, err)
 	}
 
-	eu, err := url.Parse(explainBaseUrl)
+	eu, err := url.Parse(explainUrl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse %s: %v", explainBaseUrl, err)
+		return nil, fmt.Errorf("failed to parse %s: %v", explainUrl, err)
 	}
 
+	// explainwiki query values
 	values := map[string]string{
 		"action":       "parse",
 		"format":       "json",
@@ -69,34 +70,28 @@ func NewClient(xkcdBaseUrl, explainBaseUrl string) (*Client, error) {
 	eu.RawQuery = q.Encode()
 
 	c := &Client{
-		Client: &http.Client{
+		client: &http.Client{
 			Timeout: defaultTimeOut * time.Second,
 		},
-		MaxBodySize: int64(defaultMaxBodySize),
-		xkcdUrl:     *xu,
-		explainUrl:  *eu,
+		maxBodySize: int64(defaultMaxBodySize),
+		xkcd:        *xu,
+		explain:     *eu,
 	}
 
 	return c, nil
 }
 
-// Retrieve latest comic number
-func (c *Client) RetrieveLatest() (int, error) {
-	var dest XkcdComic
-	if err := c.getRequest(c.getXkcdEndpoint, 0, &dest); err != nil {
-		return -1, fmt.Errorf("failed to get latest comic: %v", err)
-	}
-	return dest.Number, nil
-}
-
-// Retrieves given comic by number
+// Fetch comic by given number
 // If 0 is passed, retrieves latest comic.
-func (c *Client) RetrieveComic(number int) (*Comic, error) {
+func (c *Client) Fetch(num int) (*Comic, error) {
+	if num < 0 {
+		return nil, fmt.Errorf("id cannot be < 0")
+	}
 
-	var xcomic XkcdComic
-	err := c.getRequest(c.getXkcdEndpoint, number, &xcomic)
+	var xkcd Xkcd
+	err := c.get(c.getXkcdEndpoint, num, &xkcd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get xkcd %d: %v", number, err)
+		return nil, fmt.Errorf("failed to get xkcd %d: %v", num, err)
 	}
 
 	explainWiki := struct {
@@ -104,66 +99,50 @@ func (c *Client) RetrieveComic(number int) (*Comic, error) {
 			Wikitext map[string]string
 		}
 	}{}
-	err = c.getRequest(c.getExplainEndpoint, number, &explainWiki)
+	err = c.get(c.getExplainEndpoint, num, &explainWiki)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get explain %d: %v", number, err)
+		return nil, fmt.Errorf("failed to get explain %d: %v", num, err)
 	}
-	ecomic := ExplainXkcd{
+	explain := ExplainXkcd{
 		Explanation: extractExplanation(explainWiki.Parse.Wikitext["*"]),
 	}
 
-	comic, err := NewComic(xcomic, ecomic)
+	comic, err := NewComic(xkcd, explain)
 	if err != nil {
 		return nil, err
 	}
 	return comic, nil
 }
 
-// Retrieves url endpoint from f, performs GET request and unmarshal to dest
-func (c *Client) getRequest(f func(int) (string, error), number int, dest interface{}) error {
-	url, err := f(number)
-	if err != nil {
-		return err
+// Fetch latest comic number
+func (c *Client) FetchLatestNum() (int, error) {
+	var dest Xkcd
+	if err := c.get(c.getXkcdEndpoint, 0, &dest); err != nil {
+		return -1, fmt.Errorf("failed to get latest comic: %v", err)
 	}
-
-	resp, err := c.Client.Get(url)
-	if err != nil {
-		if os.IsTimeout(err) {
-			return fmt.Errorf("request to %v timed out", url)
-		}
-		return fmt.Errorf("request to %v failed: %v", url, err)
-	}
-
-	// unmarshal
-	r := http.MaxBytesReader(nil, resp.Body, c.MaxBodySize)
-	defer resp.Body.Close()
-
-	decoder := json.NewDecoder(r)
-	err = decoder.Decode(dest)
-
-	if err != nil {
-		switch {
-		case errors.As(err, &syntaxError):
-			return fmt.Errorf("body contains badly-formed JSON at character %d: %v", syntaxError.Offset, err)
-		case errors.Is(err, io.ErrUnexpectedEOF):
-			return errors.New("body contains badly-formed JSON")
-		case errors.Is(err, io.EOF):
-			return errors.New("body is empty")
-		case err.Error() == "http: request body too large":
-			return fmt.Errorf("body must not be larger than %d bytes", c.MaxBodySize)
-		// panic when decoding to non-nil pointer
-		case errors.As(err, &invalidUnmarshalError):
-			panic(err)
-		default:
-			return err
-		}
-	}
-	return nil
+	return dest.Number, nil
 }
 
-// Retrieve all comics up to latest comic number concurrently.
+// Fetch latest comic
+func (c *Client) FetchLatest() (*Comic, error) {
+	num, err := c.FetchLatestNum()
+	if err != nil {
+		return nil, err
+	}
+
+	comic, err := c.Fetch(num)
+	if err != nil {
+		return nil, err
+	}
+	return comic, nil
+}
+
+// Fetch all comics up to latest concurrently.
 // This does not guarantee that comics will be in order.
-func (c *Client) RetrieveAllComics(latest int) (map[int]*Comic, error) {
+func (c *Client) FetchAll(latest int) (map[int]*Comic, error) {
+	if latest < 0 {
+		return nil, fmt.Errorf("id cannot be < 0")
+	}
 
 	var mu sync.Mutex
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -180,7 +159,7 @@ func (c *Client) RetrieveAllComics(latest int) (map[int]*Comic, error) {
 			if id == 404 {
 				return nil
 			}
-			comic, err := c.RetrieveComic(id)
+			comic, err := c.Fetch(id)
 			if err != nil {
 				log.Println(err)
 				return err
@@ -206,6 +185,78 @@ func (c *Client) RetrieveAllComics(latest int) (map[int]*Comic, error) {
 	}
 }
 
+func (c *Client) FetchAllToFile(filename string) error {
+	if filename == "" {
+		return fmt.Errorf("no filename provided")
+	}
+
+	num, err := c.FetchLatestNum()
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Retrieving %d comics from API", num-1)
+	comics, err := c.FetchAll(num)
+	if err != nil {
+		return err
+	}
+
+	s, err := json.Marshal(comics)
+	if err != nil {
+		return fmt.Errorf("failed to marshal comics: %v", err)
+	}
+
+	if err := WriteToFile(filename, s); err != nil {
+		return fmt.Errorf("failed to write to %s: %v", filename, err)
+	}
+
+	log.Printf("%d comics downloaded to %s", num-1, filename)
+	return nil
+}
+
+// Dynamically fetches data from endpoint f with comic number num
+func (c *Client) get(f func(int) (string, error), num int, dest interface{}) error {
+	// parses url endpoint
+	url, err := f(num)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.client.Get(url)
+	if err != nil {
+		if os.IsTimeout(err) {
+			return fmt.Errorf("request to %v timed out", url)
+		}
+		return fmt.Errorf("request to %v failed: %v", url, err)
+	}
+
+	// unmarshal json
+	r := http.MaxBytesReader(nil, resp.Body, c.maxBodySize)
+	defer resp.Body.Close()
+
+	decoder := json.NewDecoder(r)
+	err = decoder.Decode(dest)
+
+	if err != nil {
+		switch {
+		case errors.As(err, &syntaxErr):
+			return fmt.Errorf("body contains badly-formed JSON at character %d: %v", syntaxErr.Offset, err)
+		case errors.Is(err, io.ErrUnexpectedEOF):
+			return fmt.Errorf("body contains badly-formed JSON")
+		case errors.Is(err, io.EOF):
+			return fmt.Errorf("body is empty")
+		case err.Error() == "http: request body too large":
+			return fmt.Errorf("body must not be larger than %d bytes", c.maxBodySize)
+		// panic when decoding to non-nil pointer
+		case errors.As(err, &invalidUnmarshalErr):
+			panic(err)
+		default:
+			return err
+		}
+	}
+	return nil
+}
+
 // Parses the endpoint at https://xkcd.com/[number]/info.0.json
 // concurrent safe as non-pointer is used
 func (c Client) getXkcdEndpoint(number int) (string, error) {
@@ -215,22 +266,22 @@ func (c Client) getXkcdEndpoint(number int) (string, error) {
 		return "", fmt.Errorf("number must be >= 0")
 	} else if number == 0 {
 		// latest comic
-		c.xkcdUrl.Path = path.Join(c.xkcdUrl.Path, endPoint)
+		c.xkcd.Path = path.Join(c.xkcd.Path, endPoint)
 	} else {
 		n := strconv.Itoa(number)
-		c.xkcdUrl.Path = path.Join(c.xkcdUrl.Path, n, endPoint)
+		c.xkcd.Path = path.Join(c.xkcd.Path, n, endPoint)
 	}
-	return c.xkcdUrl.String(), nil
+	return c.xkcd.String(), nil
 }
 
 // Parses the endpoint at https://www.explainxkcd.com page
 // concurrent safe as non-pointer is used
 func (c Client) getExplainEndpoint(number int) (string, error) {
-	q := c.explainUrl.Query()
+	q := c.explain.Query()
 	q.Set("page", strconv.Itoa(number))
-	c.explainUrl.RawQuery = q.Encode()
+	c.explain.RawQuery = q.Encode()
 
-	return c.explainUrl.String(), nil
+	return c.explain.String(), nil
 }
 
 func extractExplanation(wikitext string) string {

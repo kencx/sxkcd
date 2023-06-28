@@ -2,12 +2,13 @@ package data
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 )
 
-type XkcdComic struct {
+// data from xkcd.com
+type Xkcd struct {
 	Title      string `json:"title"`
 	SafeTitle  string `json:"safe_title,omitempty"`
 	Number     int    `json:"num"`
@@ -19,10 +20,12 @@ type XkcdComic struct {
 	Year       string `json:"year"`
 }
 
+// data from explainxkcd.com
 type ExplainXkcd struct {
 	Explanation string `json:"explanation"`
 }
 
+// Combined useful data from both sources
 type Comic struct {
 	Title       string `json:"title"`
 	Number      int    `json:"num"`
@@ -33,7 +36,7 @@ type Comic struct {
 	Date        int64  `json:"date"`
 }
 
-func NewComic(x XkcdComic, e ExplainXkcd) (*Comic, error) {
+func NewComic(x Xkcd, e ExplainXkcd) (*Comic, error) {
 
 	// TODO better way to check leading 0 in day and month
 	if len([]rune(x.Day)) <= 1 {
@@ -64,7 +67,7 @@ func NewComic(x XkcdComic, e ExplainXkcd) (*Comic, error) {
 }
 
 func WriteToFile(filename string, data []byte) error {
-	err := ioutil.WriteFile(filename, data, 0644)
+	err := os.WriteFile(filename, data, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write file: %v", err)
 	}

@@ -105,10 +105,10 @@ func TestGetExplainEndpoint(t *testing.T) {
 	}
 }
 
-func TestGetRequestXkcd(t *testing.T) {
+func TestGetXkcd(t *testing.T) {
 	t.Run("xkcd 200", func(t *testing.T) {
 		num := 100
-		want := XkcdComic{
+		want := Xkcd{
 			Title:  "foo",
 			Number: num,
 			ImgUrl: "https://example.com",
@@ -127,8 +127,8 @@ func TestGetRequestXkcd(t *testing.T) {
 			t.Fatalf("unexpected err: %v", err)
 		}
 
-		var got XkcdComic
-		err = c.getRequest(c.getXkcdEndpoint, num, &got)
+		var got Xkcd
+		err = c.get(c.getXkcdEndpoint, num, &got)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
@@ -151,14 +151,14 @@ func TestGetRequestXkcd(t *testing.T) {
 			t.Fatalf("unexpected err: %v", err)
 		}
 
-		var got XkcdComic
-		err = c.getRequest(c.getXkcdEndpoint, num, &got)
+		var got Xkcd
+		err = c.get(c.getXkcdEndpoint, num, &got)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
 
-		if got != (XkcdComic{}) {
-			t.Errorf("got %v, want %v", got, XkcdComic{})
+		if got != (Xkcd{}) {
+			t.Errorf("got %v, want %v", got, Xkcd{})
 		}
 	})
 
@@ -175,15 +175,15 @@ func TestGetRequestXkcd(t *testing.T) {
 			t.Fatalf("unexpected err: %v", err)
 		}
 
-		var got XkcdComic
-		err = c.getRequest(c.getXkcdEndpoint, num, &got)
+		var got Xkcd
+		err = c.get(c.getXkcdEndpoint, num, &got)
 		if err == nil {
 			t.Fatalf("expected err: number must be >= 0")
 		}
 	})
 }
 
-func TestGetRequestExplain(t *testing.T) {
+func TestGetExplain(t *testing.T) {
 	t.Run("200", func(t *testing.T) {
 		num := 100
 		want := ExplainXkcd{
@@ -202,7 +202,7 @@ func TestGetRequestExplain(t *testing.T) {
 		}
 
 		var got ExplainXkcd
-		err = c.getRequest(c.getExplainEndpoint, num, &got)
+		err = c.get(c.getExplainEndpoint, num, &got)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
@@ -227,7 +227,7 @@ func TestGetRequestExplain(t *testing.T) {
 		}
 
 		var got ExplainXkcd
-		err = c.getRequest(c.getExplainEndpoint, num, &got)
+		err = c.get(c.getExplainEndpoint, num, &got)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}

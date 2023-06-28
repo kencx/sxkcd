@@ -2,7 +2,6 @@ package worker
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -54,7 +53,7 @@ func (w *Worker) Stop() {
 
 func (w *Worker) fetchComic() error {
 	if w.busy {
-		return errors.New("fetching already in progress")
+		return fmt.Errorf("fetching already in progress")
 	}
 
 	w.busy = true
@@ -66,7 +65,7 @@ func (w *Worker) fetchComic() error {
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %v", err)
 	}
-	latest, err := client.RetrieveLatest()
+	latest, err := client.FetchLatestNum()
 	if err != nil {
 		return err
 	}
@@ -82,7 +81,7 @@ func (w *Worker) fetchComic() error {
 
 	log.Printf("fetching latest comic: #%d", latest)
 	start := time.Now()
-	comic, err := client.RetrieveComic(latest)
+	comic, err := client.Fetch(latest)
 	if err != nil {
 		return err
 	}
