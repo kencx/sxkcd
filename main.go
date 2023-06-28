@@ -28,7 +28,7 @@ const (
     -f, --file      Read data from file
     -p, --port      Server port
     -r, --redis     Redis connection URI [host:port]
-	-i, --reindex   Reindex existing data with new file
+    -i, --reindex   Reindex existing data with new file
 
   download:
     -l, --latest    Get latest comic number

@@ -1,24 +1,20 @@
 # sxkcd
-Search for that [xkcd](https://xkcd.com) you swear you remember...
+>Search for that [xkcd](https://xkcd.com) you swear you remember...
 
-## Introduction
-sxkcd is built with Go, Redis and Svelte.
+sxkcd is a simple webserver powered by Go, Redis and
+[Svelte](https://svelte.dev).
 
-Data is collected from xkcd and [explainxkcd](https://explainxkcd.com), and indexed with
-Redis. Redis was chosen for its simplicity and high performance. Paired with RediSearch
-and RediJSON, it provides full-text search capabilities with an extensive query syntax.
-With a relatively small dataset, it processes queries really quickly in <40ms.
-
-The frontend is a reactive static site built with Svelte. It fetches responses to your
-queries from the backend Go server, which provides a query API for the in-memory database.
+All data is scraped from xkcd and [explainxkcd](https://explainxkcd.com), and
+indexed with Redis. Paired with [RediSearch](https://redis.io/docs/stack/search)
+and [RediJSON](https://redis.io/docs/stack/search/), Redis provides full-text
+search and an extensive query syntax to the indexed data. Every day, sxkcd
+automatically updates the database with the newest comic, if it doesn't already
+exist.
 
 Try it out [here](https://sxkcd.cheo.dev)!
 
->To update the database, a cronjob runs `scripts/refresh.sh` every Tuesday, Thursday and
->Saturday morning to download and reindex the latest dataset. So expect some delay for
->the newest comic.
-
 ## Usage
+
 ```bash
 usage: sxkcd [server|download] [OPTIONS] [FILE]
 
@@ -30,6 +26,7 @@ usage: sxkcd [server|download] [OPTIONS] [FILE]
     -f, --file      Read data from file
     -p, --port      Server port
     -r, --redis     Redis connection URI [host:port]
+    -i, --reindex   Reindex existing data with new file
 
   download:
     -l, --latest    Get latest comic number
@@ -37,25 +34,34 @@ usage: sxkcd [server|download] [OPTIONS] [FILE]
     -f, --file	    Download all comics to file
 ```
 
-sxkcd requires a dataset to start the server. Download the full set of xkcd comics with
+Start your own instance of sxkcd (and Redis) with the provided `docker-compose.yml`:
 
-```bash
+```console
+$ docker-compose -d
+```
+
+### Local Setup
+
+To run locally:
+
+```console
+# download all comics
 $ sxkcd download -f data/comics.json
-```
 
-To start your own instance of sxkcd, use the provided `docker-compose.yml` which starts
-two Docker containers: Redis and sxkcd.
-
-```bash
-$ docker-compose up -d
-```
-
-Alternatively, sxkcd can be run directly on the host with a local instance of Redis and the `sxkcd` binary, which must be built from source.
-
-```bash
-$ redis-server
+# start a redis instance with data persistence
+$ redis-server --appendonly yes
 $ sxkcd server -p 6380 -r localhost:6379 -f data/comics.json
 ```
+
+If Redis is started with persistence, sxkcd can be restarted without any data
+files. If we wish to reindex all data in the database with a new file, we can
+run sxkcd with the `--reindex` flag:
+
+```console
+$ sxkcd server -p 6380 -r localhost:6379 -f data/new.json --reindex
+```
+
+This will replace all existing data with data in the new file.
 
 ## Querying
 sxkcd supports union, negation, prefix matching and filtering by custom date ranges

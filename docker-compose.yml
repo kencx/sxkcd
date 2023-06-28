@@ -4,6 +4,12 @@ services:
     image: redis/redis-stack-server:latest
     container_name: redis
     hostname: redis
+    environment:
+      REDIS_ARGS: --save 20 1 --appendonly yes
+    # ports:
+    #   - "6379:6379"
+    volumes:
+      - "./app_data/redis:/data"
     networks:
       - sxkcd
 
@@ -12,12 +18,13 @@ services:
     hostname: app
     image: sxkcd:latest
     build: .
+    command: ["-f", "/data/comics.json"]
     # to download new data
     # entrypoint: ["./sxkcd", "download", "-f", "/data/comics.json"]
     ports:
       - "6380:6380"
     volumes:
-      - "./app_data:/data"
+      - "./app_data/app:/data"
     depends_on:
       - redis
     networks:
