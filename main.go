@@ -79,9 +79,6 @@ func main() {
 	args := flag.Args()
 	if len(args) > 1 {
 		switch args[0] {
-		case "server":
-			serverCmd.Parse(args[1:])
-
 		case "download":
 			downloadCmd.Parse(args[1:])
 
@@ -134,6 +131,9 @@ func main() {
 			log.Printf("%d comics downloaded to %s", latestComicNum-1, downloadFile)
 			os.Exit(0)
 
+		case "server":
+			serverCmd.Parse(args[1:])
+
 		default:
 			fmt.Print(help)
 			os.Exit(1)
@@ -142,9 +142,6 @@ func main() {
 
 	if rds == "" {
 		log.Fatal("Redis connection URI must be provided")
-	}
-	if file == "" {
-		log.Fatal("Data file must be provided")
 	}
 	if port <= 0 {
 		log.Fatalf("Invalid port: %v", port)
@@ -155,9 +152,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := s.ReadFile(file); err != nil {
-		log.Fatal(err)
-	}
+	// if file != "" {
+	// 	if err := s.ReadFile(file); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
 
 	if err := s.Run(port); err != nil {
 		log.Fatal(err)

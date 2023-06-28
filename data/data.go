@@ -161,7 +161,8 @@ func (c *Client) getRequest(f func(int) (string, error), number int, dest interf
 	return nil
 }
 
-// Retrieve all comics up to latest comic number concurrently
+// Retrieve all comics up to latest comic number concurrently.
+// This does not guarantee that comics will be in order.
 func (c *Client) RetrieveAllComics(latest int) (map[int]*Comic, error) {
 
 	var mu sync.Mutex

@@ -16,34 +16,29 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/kencx/sxkcd/redis"
+	"github.com/kencx/sxkcd/worker"
 )
 
 type Server struct {
-	ctx     context.Context
-	rdb     redis.Client
+	rds     *redis.Client
+	worker  *worker.Worker
 	Static  embed.FS
 	Version string
 }
 
 func NewServer(uri, version string, static embed.FS) (*Server, error) {
-	s := &Server{
-		ctx: context.Background(),
-		rdb: *redis.NewClient(&redis.Options{
-			Addr:         uri,
-			DialTimeout:  20 * time.Second,
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 5 * time.Second,
-		}),
+	client, err := redis.New(uri)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create redis client: %v", err)
+	}
+
+	return &Server{
+		rds:     client,
+		worker:  worker.New(client),
 		Version: version,
 		Static:  static,
-	}
-
-	if err := s.rdb.Ping(s.ctx).Err(); err != nil {
-		return nil, fmt.Errorf("failed to connect to redis database: %v", err)
-	}
-
-	return s, nil
+	}, nil
 }
 
 func (s *Server) ReadFile(filename string) error {
@@ -94,7 +89,14 @@ func (s *Server) ReadFile(filename string) error {
 	start := time.Now()
 	log.Printf("Starting indexing of %d comics\n", len(comics))
 
-	err = s.Index(comics)
+	err = s.rds.CreateIndex()
+	if err != nil {
+		return err
+	}
+
+	// comics are not guaranteed to be in order. This depends entirely on the order in
+	// which they are fetched.
+	err = s.rds.AddBatch(comics)
 	if err != nil {
 		return err
 	}
@@ -129,6 +131,11 @@ func (s *Server) Run(port int) error {
 	}()
 	log.Printf("Server started at %s", p)
 
+	err = s.worker.Start()
+	if err != nil {
+		log.Printf("worker failed to start: %v", err)
+	}
+
 	// graceful shutdown
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -137,6 +144,8 @@ func (s *Server) Run(port int) error {
 
 	tc, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	s.worker.Stop()
 	if err := srv.Shutdown(tc); err != nil {
 		log.Fatalf("failed to shut down gracefully: %v", err)
 	}
@@ -164,7 +173,7 @@ func (s *Server) searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	count, results, err := s.Search(query)
+	count, results, err := s.rds.Search(query)
 	if err != nil {
 		log.Println(err)
 		errorResponse(w, err)
