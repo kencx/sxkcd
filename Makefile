@@ -1,17 +1,13 @@
-# version = $(shell git describe --tags)
-version = "v0.1.0"
+version = $(shell git describe --tags)
 ldflags = -ldflags "-s -w -X main.version=${version}"
 
-.PHONY: build dbuild run test dcu clean deploy destroy
+.PHONY: build dbuild test dcu clean
 
 build:
 	go build ${ldflags} -v .
 
-dbuild: docker-compose.yml
-	docker-compose up -d --build
-
-run:
-	./sxkcd
+dbuild: Dockerfile
+	docker build . -t ghcr.io/kencx/sxkcd:${version}
 
 test:
 	go test -race ./data
@@ -19,11 +15,6 @@ test:
 dcu: docker-compose.yml
 	docker-compose up -d
 
-deploy: deploy/terraform.tfstate
-	cd deploy && terraform apply
-
-destroy:
-	cd deploy && terraform destroy
-
 clean:
 	rm -rf sxkcd
+	rm -rf ui/build/*
