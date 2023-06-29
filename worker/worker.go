@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/kencx/sxkcd/data"
@@ -39,7 +40,14 @@ func (w *Worker) Start() error {
 			case <-w.ticker.C:
 				err := w.fetchComic()
 				if err != nil {
-					log.Printf("err processing worker task: %v", err)
+					log.Println(err)
+
+					// sleep duration should not be longer than ticker duration
+					// signal interrupt will be blocked during sleep
+					err := retry(3, 10*time.Second, w.fetchComic)
+					if err != nil {
+						log.Printf("failed to retry, skipping run")
+					}
 				}
 			}
 		}
@@ -95,5 +103,22 @@ func (w *Worker) fetchComic() error {
 	}
 
 	log.Printf("Successfully fetched comic #%d in %v\n", latest, time.Since(start))
+	return nil
+}
+
+func retry(attempts int, sleep time.Duration, f func() error) error {
+	if err := f(); err != nil {
+		if attempts--; attempts > 0 {
+			log.Printf("err when retrying: %v", err)
+
+			jitter := time.Duration((rand.Int63n(int64(sleep))))
+			sleep += jitter / 2
+
+			time.Sleep(sleep)
+			return retry(attempts, 2*sleep, f)
+		}
+		return err
+	}
+
 	return nil
 }
