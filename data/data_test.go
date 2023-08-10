@@ -128,7 +128,7 @@ func TestGetXkcd(t *testing.T) {
 		}
 
 		var got Xkcd
-		err = c.get(c.getXkcdEndpoint, num, &got)
+		err = c.getWithRetry(c.getXkcdEndpoint, num, &got)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
@@ -152,7 +152,7 @@ func TestGetXkcd(t *testing.T) {
 		}
 
 		var got Xkcd
-		err = c.get(c.getXkcdEndpoint, num, &got)
+		err = c.getWithRetry(c.getXkcdEndpoint, num, &got)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
@@ -202,7 +202,7 @@ func TestGetExplain(t *testing.T) {
 		}
 
 		var got ExplainXkcd
-		err = c.get(c.getExplainEndpoint, num, &got)
+		err = c.getWithRetry(c.getExplainEndpoint, num, &got)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
@@ -227,7 +227,7 @@ func TestGetExplain(t *testing.T) {
 		}
 
 		var got ExplainXkcd
-		err = c.get(c.getExplainEndpoint, num, &got)
+		err = c.getWithRetry(c.getExplainEndpoint, num, &got)
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}

@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kencx/sxkcd/util"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -89,7 +90,7 @@ func (c *Client) Fetch(num int) (*Comic, error) {
 	}
 
 	var xkcd Xkcd
-	err := c.get(c.getXkcdEndpoint, num, &xkcd)
+	err := c.getWithRetry(c.getXkcdEndpoint, num, &xkcd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get xkcd %d: %v", num, err)
 	}
@@ -99,7 +100,7 @@ func (c *Client) Fetch(num int) (*Comic, error) {
 			Wikitext map[string]string
 		}
 	}{}
-	err = c.get(c.getExplainEndpoint, num, &explainWiki)
+	err = c.getWithRetry(c.getExplainEndpoint, num, &explainWiki)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get explain %d: %v", num, err)
 	}
@@ -117,7 +118,7 @@ func (c *Client) Fetch(num int) (*Comic, error) {
 // Fetch latest comic number
 func (c *Client) FetchLatestNum() (int, error) {
 	var dest Xkcd
-	if err := c.get(c.getXkcdEndpoint, 0, &dest); err != nil {
+	if err := c.getWithRetry(c.getXkcdEndpoint, 0, &dest); err != nil {
 		return -1, fmt.Errorf("failed to get latest comic: %v", err)
 	}
 	return dest.Number, nil
@@ -211,6 +212,16 @@ func (c *Client) FetchAllToFile(filename string) error {
 	}
 
 	log.Printf("%d comics downloaded to %s", num-1, filename)
+	return nil
+}
+
+func (c *Client) getWithRetry(f func(int) (string, error), num int, dest interface{}) error {
+	err := util.Retry(3, 30*time.Second, func() error {
+		return c.get(f, num, dest)
+	})
+	if err != nil {
+		log.Printf("failed to retry, skipping run")
+	}
 	return nil
 }
 
