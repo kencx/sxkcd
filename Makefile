@@ -6,7 +6,7 @@ ldflags = -ldflags "-s -w -X main.version=${version}"
 build:
 	go build ${ldflags} -v .
 
-dbuild: Dockerfile
+docker: Dockerfile
 	docker build . -t ghcr.io/kencx/sxkcd:${version}
 
 test:

@@ -1,19 +1,9 @@
 # sxkcd
->Search for that [xkcd](https://xkcd.com) you swear you remember...
 
-sxkcd is a simple webserver powered by Go, Redis and
-[Svelte](https://svelte.dev).
+S(earch)xkcd is a [xkcd](https://xkcd.com) search engine that supports full-text
+search and an extensive query syntax.
 
-All data is scraped from xkcd and [explainxkcd](https://explainxkcd.com), and
-indexed with Redis. Paired with [RediSearch](https://redis.io/docs/stack/search)
-and [RediJSON](https://redis.io/docs/stack/search/), Redis provides full-text
-search and an extensive query syntax to the indexed data. Every day, sxkcd
-automatically updates the database with the newest comic, if it doesn't already
-exist.
-
-Try it out [here](https://sxkcd.cheo.dev)!
-
-## Usage
+>Try it out [here](https://xkcd.cheo.dev)!
 
 ```bash
 usage: sxkcd [server|download] [OPTIONS] [FILE]
@@ -34,37 +24,22 @@ usage: sxkcd [server|download] [OPTIONS] [FILE]
     -f, --file	    Download all comics to file
 ```
 
-Start your own instance of sxkcd (and Redis) with the provided `docker-compose.yml`:
+Start your own instance of `sxkcd` with the provided `docker-compose.yml`:
 
-```console
+```bash
+# download all comic data
+$ docker compose run \
+    --rm -d \
+    --no-deps \
+    --entrypoint "./sxkcd" \
+    app download -f /data/comics.json
+
 $ docker-compose -d
 ```
 
-### Local Setup
+### Querying
+`sxkcd` supports union, negation, prefix matching and filtering by custom date ranges
 
-To run locally:
-
-```console
-# download all comics
-$ sxkcd download -f data/comics.json
-
-# start a redis instance with data persistence
-$ redis-server --appendonly yes
-$ sxkcd server -p 6380 -r localhost:6379 -f data/comics.json
-```
-
-If Redis is started with persistence, sxkcd can be restarted without any data
-files. If we wish to reindex all data in the database with a new file, we can
-run sxkcd with the `--reindex` flag:
-
-```console
-$ sxkcd server -p 6380 -r localhost:6379 -f data/new.json --reindex
-```
-
-This will replace all existing data with data in the new file.
-
-## Querying
-sxkcd supports union, negation, prefix matching and filtering by custom date ranges
 ```text
 # foo OR bar
 > foo|bar
@@ -88,21 +63,84 @@ sxkcd supports union, negation, prefix matching and filtering by custom date ran
 > @date: 2022-08-01
 ```
 
-## Development
-sxkcd is built with
+## How it Works
 
-- Go 1.17
-- [Redis](https://redis.io/) w/[RediSearch](https://redis.io/docs/stack/search/) and [RedisJSON](https://redis.io/docs/stack/json/)
-- [Svelte](https://svelte.dev/) 3.46.0 and [Sveltekit](https://kit.svelte.dev/) 1.0.0-next.405
+`sxkcd` is a webserver built with Go and [Svelte](https://svelte.dev). It
+downloads all data from xkcd and [explainxkcd](https://explainxkcd.com), before
+cleaning and combining it into a single JSON file. When `sxkcd` is started, it
+indexes all JSON data into Redis Stack as [JSON
+documents](https://redis.io/docs/interact/search-and-query/indexing/). Redis
+Stack offers native support for indexing and querying JSON documents, providing
+full-text search and an extensive [query
+syntax](https://redis.io/docs/interact/search-and-query/query/) for all JSON
+data and its sub-elements.
+
+Every day, `sxkcd` automatically updates the database with the newest comic, if it
+doesn't already exist.
+
+## Install
+
+Run with docker-compose:
+
+```bash
+# download all comic data
+$ docker compose run \
+    --rm -d \
+    --no-deps \
+    --entrypoint "./sxkcd" \
+    app download -f /data/comics.json
+
+$ docker-compose -d
+```
+
+Run locally:
+
+```bash
+# download all comic data
+$ sxkcd download -f data/comics.json
+
+# start a redis instance with data persistence
+$ redis-server --appendonly yes
+
+$ sxkcd server -p 6380 -r localhost:6379 -f data/comics.json
+```
+
+If Redis is started with persistence, `sxkcd` can be restarted without any data
+files. If we wish to reindex all data in the database with a new file, we can
+run `sxkcd` with the `--reindex` flag:
+
+```bash
+$ sxkcd server -p 6380 -r localhost:6379 -f data/new.json --reindex
+```
+
+This will replace all existing data with that in the new file.
+
+## Development
+
+`sxkcd` is built with
+
+- Go 1.20
+- [Redis Stack](https://redis.io/)
+  (w/[RediSearch](https://redis.io/docs/stack/search/) and
+  [RedisJSON](https://redis.io/docs/stack/json/))
+- [Svelte](https://svelte.dev/) 3.46.0 and [Sveltekit](https://kit.svelte.dev/)
+  1.0.0-next.405
 - [picocss](https://picocss.com/) v1.5.3
 - Node.js v18
-- Docker (optional)
+- Docker and docker-compose (optional)
 
-#### Build from Source
-Because the frontend's static files are embedded in the Go binary, we must generate them prior to building:
+### Build from Source
+
+Clone the repository:
 
 ```bash
 $ git clone https://github.com/kencx/sxkcd.git
+```
+
+The frontend's static files are embedded in the Go binary. They must generated
+prior to building the Go binary:
+
+```bash
 $ cd ui && npm ci --quiet
 
 # Build static files in ui/build
@@ -113,14 +151,16 @@ $ go mod download
 $ make build
 ```
 
-#### Build Docker Image
-You can also choose to build a local docker image after generating the static files.
+### Build Docker Image
+
+You can also choose to build a local docker image:
 
 ```bash
-$ make dbuild
+$ make build
 ```
 
-#### Local Development
+### Local Development
+
 ```bash
 # Start frontend
 $ cd ui
@@ -130,7 +170,7 @@ $ npm run dev
 # Start redis docker container
 $ docker-compose up -d redis
 
-# Start sxkcd server
+# Start backend
 $ go mod download
 $ make build
 $ ./sxkcd server --port 6380 --redis localhost:6379 --file data/comics.json

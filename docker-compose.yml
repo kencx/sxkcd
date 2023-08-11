@@ -8,7 +8,8 @@ services:
     environment:
       REDIS_ARGS: --save 20 1 --appendonly yes
     restart: unless-stopped
-    #   - "6379:6379"
+    ports:
+      - "6379:6379"
     volumes:
       - "./app_data/redis:/data"
     healthcheck:
@@ -20,13 +21,11 @@ services:
       - sxkcd
 
   app:
-    container_name: app
-    hostname: app
+    container_name: sxkcd
+    hostname: sxkcd
     image: ghcr.io/kencx/sxkcd:latest
     build: .
-    command: ["-f", "/data/comics.json"]
-    # to download new data
-    # entrypoint: ["./sxkcd", "download", "-f", "/data/comics.json"]
+    command: ["--reindex", "-f", "/data/comics.json"]
     restart: unless-stopped
     ports:
       - "6380:6380"
@@ -36,11 +35,8 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - proxy
       - sxkcd
 
 networks:
-  proxy:
-    external: true
   sxkcd:
     name: sxkcd
