@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/kencx/sxkcd/data"
 )
 
 const (
@@ -119,11 +120,15 @@ func (r *Client) Add(id int, comic []byte) error {
 	return nil
 }
 
-func (r *Client) AddBatch(documents []json.RawMessage) error {
+func (r *Client) AddBatch(documents []data.Comic) error {
 	pipe := r.rd.Pipeline()
 	for i, d := range documents {
 		id := strconv.Itoa(i)
-		pipe.Do(r.ctx, "JSON.SET", KeyPrefix+id, "$", string(d))
+		j, err := json.Marshal(&d)
+		if err != nil {
+			return fmt.Errorf("failed to marshal comic %d: %v", d.Number, err)
+		}
+		pipe.Do(r.ctx, "JSON.SET", KeyPrefix+id, "$", j)
 	}
 
 	_, err := pipe.Exec(r.ctx)

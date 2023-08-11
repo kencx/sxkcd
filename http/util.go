@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/kencx/sxkcd/data"
 )
 
-func decodeFile(filename string) ([]json.RawMessage, error) {
+func decodeFile(filename string) ([]data.Comic, error) {
 	var rc io.ReadCloser
 
 	if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
@@ -39,14 +41,14 @@ func decodeFile(filename string) ([]json.RawMessage, error) {
 		return nil, fmt.Errorf("not json object")
 	}
 
-	var comics []json.RawMessage
+	var comics []data.Comic
 	for dec.More() {
 		_, err = dec.Token()
 		if err != nil {
 			return nil, fmt.Errorf("key err: %v", err)
 		}
 
-		var val json.RawMessage
+		var val data.Comic
 		err = dec.Decode(&val)
 		if err != nil {
 			return nil, fmt.Errorf("decode err: %v", err)
