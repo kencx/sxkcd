@@ -25,7 +25,8 @@ services:
     hostname: sxkcd
     image: ghcr.io/kencx/sxkcd:latest
     build: .
-    command: ["--reindex", "-f", "/data/comics.json"]
+    # uncomment on first startup
+    # command: ["-f", "/data/comics.json"]
     restart: unless-stopped
     ports:
       - "6380:6380"
