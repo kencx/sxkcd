@@ -31,7 +31,6 @@ const (
     -i, --reindex   Reindex existing data with new file
 
   download:
-    -l, --latest    Get latest comic number
     -n, --num       Download single comic by number
     -f, --file	    Download all comics to file
 `
@@ -46,7 +45,6 @@ func main() {
 		rds         string
 		reindex     bool
 
-		latest       bool
 		num          int
 		downloadFile string
 	)
@@ -65,8 +63,6 @@ func main() {
 	serverCmd.BoolVar(&reindex, "reindex", false, "reindex with new file")
 
 	downloadCmd := flag.NewFlagSet("download", flag.ExitOnError)
-	downloadCmd.BoolVar(&latest, "l", false, "get latest comic number")
-	downloadCmd.BoolVar(&latest, "latest", false, "get latest comic number")
 	downloadCmd.IntVar(&num, "n", 0, "download comic by number")
 	downloadCmd.IntVar(&num, "num", 0, "download comic by number")
 	downloadCmd.StringVar(&downloadFile, "f", "data/comics.json", "download all comics to file")
@@ -86,10 +82,7 @@ func main() {
 		case "download":
 			downloadCmd.Parse(args[1:])
 
-			c, err := data.NewClient(data.XkcdBaseUrl, data.ExplainBaseUrl)
-			if err != nil {
-				log.Fatal(err)
-			}
+			c := data.NewClient()
 
 			if num > 0 {
 				comic, err := c.Fetch(num)
@@ -104,16 +97,7 @@ func main() {
 				os.Exit(0)
 			}
 
-			if latest {
-				comic, err := c.FetchLatestNum()
-				if err != nil {
-					log.Fatal(err)
-				}
-				fmt.Printf("Latest comic: #%d", comic)
-				os.Exit(0)
-			}
-
-			if err = c.FetchAllToFile(downloadFile); err != nil {
+			if err := c.FetchAll(downloadFile); err != nil {
 				log.Fatal(err)
 			}
 			os.Exit(0)

@@ -2,7 +2,6 @@ package data
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"time"
 )
@@ -64,12 +63,4 @@ func NewComic(x Xkcd, e ExplainXkcd) (*Comic, error) {
 	}
 
 	return c, nil
-}
-
-func WriteToFile(filename string, data []byte) error {
-	err := os.WriteFile(filename, data, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write file: %v", err)
-	}
-	return nil
 }

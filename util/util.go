@@ -1,6 +1,8 @@
 package util
 
 import (
+	"context"
+	"errors"
 	"log"
 	"math/rand"
 	"time"
@@ -8,6 +10,11 @@ import (
 
 func Retry(attempts int, sleep time.Duration, f func() error) error {
 	if err := f(); err != nil {
+		// skip retry when canceled
+		if errors.Is(err, context.Canceled) {
+			return err
+		}
+
 		if attempts--; attempts > 0 {
 			log.Printf("retrying due to err: %v", err)
 
@@ -19,6 +26,5 @@ func Retry(attempts int, sleep time.Duration, f func() error) error {
 		}
 		return err
 	}
-
 	return nil
 }

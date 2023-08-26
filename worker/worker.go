@@ -69,10 +69,7 @@ func (w *Worker) fetchComic() error {
 		w.busy = false
 	}()
 
-	client, err := data.NewClient(data.XkcdBaseUrl, data.ExplainBaseUrl)
-	if err != nil {
-		return fmt.Errorf("failed to create http client: %v", err)
-	}
+	client := data.NewClient()
 	latest, err := client.FetchLatestNum()
 	if err != nil {
 		return err
