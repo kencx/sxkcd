@@ -5,7 +5,7 @@ RUN npm ci --quiet
 COPY ui/ .
 RUN npm run build
 
-FROM golang:1.20-alpine3.18 as builder
+FROM golang:1.21-alpine3.18 as builder
 WORKDIR /app
 ENV CGO_ENABLED=0 GOFLAGS="-ldflags=-s -w"
 COPY go.mod go.sum ./

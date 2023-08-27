@@ -1,9 +1,9 @@
 module github.com/kencx/sxkcd
 
-go 1.20
+go 1.21
 
 require (
-	github.com/go-redis/redis/v8 v8.11.5
+	github.com/redis/go-redis/v9 v9.1.0
 	golang.org/x/sync v0.3.0
 )
 

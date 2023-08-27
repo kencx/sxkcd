@@ -1,7 +1,7 @@
 version = $(shell git describe --tags)
 ldflags = -ldflags "-s -w -X main.version=${version}"
 
-.PHONY: build dbuild test dcu clean
+.PHONY: build docker test dcu clean
 
 build:
 	go build ${ldflags} -v .
