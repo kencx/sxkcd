@@ -19,7 +19,6 @@ usage: sxkcd [server|download] [OPTIONS] [FILE]
     -i, --reindex   Reindex existing data with new file
 
   download:
-    -l, --latest    Get latest comic number
     -n, --num       Download single comic by number
     -f, --file	    Download all comics to file
 ```
@@ -119,7 +118,7 @@ This will replace all existing data with that in the new file.
 
 `sxkcd` is built with
 
-- Go 1.20
+- Go 1.21
 - [Redis Stack](https://redis.io/)
   (w/[RediSearch](https://redis.io/docs/stack/search/) and
   [RedisJSON](https://redis.io/docs/stack/json/))
@@ -127,7 +126,6 @@ This will replace all existing data with that in the new file.
   1.0.0-next.405
 - [picocss](https://picocss.com/) v1.5.3
 - Node.js v18
-- Docker and docker-compose (optional)
 
 ### Build from Source
 
