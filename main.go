@@ -57,16 +57,16 @@ func main() {
 	serverCmd.StringVar(&file, "file", "", "read data from file")
 	serverCmd.IntVar(&port, "p", 6380, "port")
 	serverCmd.IntVar(&port, "port", 6380, "port")
-	serverCmd.StringVar(&rds, "r", "redis:6379", "redis connection URI [host:port]")
-	serverCmd.StringVar(&rds, "redis", "redis:6379", "redis connection URI [host:port]")
+	serverCmd.StringVar(&rds, "r", "localhost:6379", "redis connection URI [host:port]")
+	serverCmd.StringVar(&rds, "redis", "localhost:6379", "redis connection URI [host:port]")
 	serverCmd.BoolVar(&reindex, "i", false, "reindex with new file")
 	serverCmd.BoolVar(&reindex, "reindex", false, "reindex with new file")
 
 	downloadCmd := flag.NewFlagSet("download", flag.ExitOnError)
 	downloadCmd.IntVar(&num, "n", 0, "download comic by number")
 	downloadCmd.IntVar(&num, "num", 0, "download comic by number")
-	downloadCmd.StringVar(&downloadFile, "f", "data/comics.json", "download all comics to file")
-	downloadCmd.StringVar(&downloadFile, "file", "data/comics.json", "download all comics to file")
+	downloadCmd.StringVar(&downloadFile, "f", "comics.json", "download all comics to file")
+	downloadCmd.StringVar(&downloadFile, "file", "comics.json", "download all comics to file")
 
 	flag.Usage = func() { os.Stdout.Write([]byte(help)) }
 	flag.Parse()
@@ -95,6 +95,8 @@ func main() {
 				}
 				fmt.Println(string(b))
 				os.Exit(0)
+			} else {
+				log.Fatalf("num must be >= 0")
 			}
 
 			if err := c.FetchAll(downloadFile); err != nil {

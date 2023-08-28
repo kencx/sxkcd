@@ -28,7 +28,7 @@ type Server struct {
 func NewServer(uri, version string, static embed.FS) (*Server, error) {
 	client, err := redis.New(uri)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create redis client: %v", err)
+		return nil, fmt.Errorf("failed to create redis client: %w", err)
 	}
 
 	return &Server{
@@ -58,7 +58,7 @@ func (s *Server) Initialize(filename string, reindex bool) error {
 			if reindex {
 				s.rds.Reindex()
 			} else {
-				return fmt.Errorf("%v, include --reindex to replace data", err)
+				return fmt.Errorf("%w, include --reindex to replace data", err)
 			}
 		} else {
 			return err
@@ -116,14 +116,14 @@ func (s *Server) Run(port int) error {
 	go func() {
 		err := srv.ListenAndServe()
 		if !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("failed to start server: %v", err)
+			log.Fatalf("failed to start server: %w", err)
 		}
 	}()
 	log.Printf("Server started at %s", p)
 
 	err = s.worker.Start()
 	if err != nil {
-		log.Printf("worker failed to start: %v", err)
+		log.Printf("worker failed to start: %w", err)
 	}
 
 	// graceful shutdown
@@ -137,7 +137,7 @@ func (s *Server) Run(port int) error {
 
 	s.worker.Stop()
 	if err := srv.Shutdown(tc); err != nil {
-		log.Fatalf("failed to shut down gracefully: %v", err)
+		log.Fatalf("failed to shut down gracefully: %w", err)
 	}
 
 	log.Printf("Application gracefully stopped")

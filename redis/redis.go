@@ -44,7 +44,7 @@ func New(uri string) (*Client, error) {
 		}),
 	}
 	if err := r.rd.Ping(r.ctx).Err(); err != nil {
-		return nil, fmt.Errorf("failed to connect to redis database: %v", err)
+		return nil, fmt.Errorf("failed to connect to redis database: %w", err)
 	}
 	return r, nil
 }
@@ -105,7 +105,7 @@ func (r *Client) Add(id int, comic []byte) error {
 	exists, err := r.rd.Exists(r.ctx, KeyPrefix+id_str).Result()
 	if err != nil {
 		if err != redis.Nil {
-			return fmt.Errorf("failed to add comic: %v", err)
+			return fmt.Errorf("failed to add comic: %w", err)
 		}
 	}
 	if exists != 0 {
@@ -115,7 +115,7 @@ func (r *Client) Add(id int, comic []byte) error {
 
 	err = r.rd.Do(r.ctx, "JSON.SET", KeyPrefix+id_str, "$", string(comic)).Err()
 	if err != nil {
-		return fmt.Errorf("failed to add comic: %v", err)
+		return fmt.Errorf("failed to add comic: %w", err)
 	}
 	return nil
 }
@@ -126,14 +126,14 @@ func (r *Client) AddBatch(documents []data.Comic) error {
 		id := strconv.Itoa(i)
 		j, err := json.Marshal(&d)
 		if err != nil {
-			return fmt.Errorf("failed to marshal comic %d: %v", d.Number, err)
+			return fmt.Errorf("failed to marshal comic %d: %w", d.Number, err)
 		}
 		pipe.Do(r.ctx, "JSON.SET", KeyPrefix+id, "$", j)
 	}
 
 	_, err := pipe.Exec(r.ctx)
 	if err != nil {
-		return fmt.Errorf("failed to index: %v", err)
+		return fmt.Errorf("failed to index: %w", err)
 	}
 	return nil
 }
@@ -145,7 +145,7 @@ func (r *Client) ComicExists(num int) (bool, error) {
 	query := fmt.Sprintf("@num: [%d %d]", num, num)
 	count, result, err := r.Search(query)
 	if err != nil {
-		return false, fmt.Errorf("failed to find comic %d: %v", num, err)
+		return false, fmt.Errorf("failed to find comic %d: %w", num, err)
 	}
 	return (count == 1 && result != nil), nil
 }
@@ -157,7 +157,7 @@ func (r *Client) Search(query string) (int64, []*Result, error) {
 		"LIMIT", 0, 100,
 	).Slice()
 	if err != nil {
-		return 0, nil, fmt.Errorf("search query failed: %v", err)
+		return 0, nil, fmt.Errorf("search query failed: %w", err)
 	}
 
 	count := values[0].(int64)
@@ -179,7 +179,7 @@ func (r *Client) Search(query string) (int64, []*Result, error) {
 
 		var res Result
 		if err := json.Unmarshal(b, &res); err != nil {
-			return 0, nil, fmt.Errorf("search result could not be unmarshaled: %v", err)
+			return 0, nil, fmt.Errorf("search result could not be unmarshaled: %w", err)
 		}
 		res.Id = i
 		results = append(results, &res)
