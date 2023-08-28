@@ -13,11 +13,7 @@ func TestGetXkcdEndpoint(t *testing.T) {
 		num := 1
 		want := fmt.Sprintf("https://xkcd.com/%d/info.0.json", num)
 
-		got, err := buildXkcdURL(num)
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
+		got := buildXkcdURL(num)
 		if got != want {
 			t.Errorf("got %v, want %v", got, want)
 		}
@@ -27,29 +23,9 @@ func TestGetXkcdEndpoint(t *testing.T) {
 		num := 0
 		want := "https://xkcd.com/info.0.json"
 
-		got, err := buildXkcdURL(num)
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
+		got := buildXkcdURL(num)
 		if got != want {
 			t.Errorf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("multiple", func(t *testing.T) {
-		num := 5
-		for i := 1; i < num+1; i++ {
-			want := fmt.Sprintf("https://xkcd.com/%d/info.0.json", i)
-
-			got, err := buildXkcdURL(i)
-			if err != nil {
-				t.Fatalf("unexpected err: %v", err)
-			}
-
-			if got != want {
-				t.Errorf("got %v, want %v", got, want)
-			}
 		}
 	})
 }

@@ -46,8 +46,7 @@ func NewComic(x Xkcd, e ExplainXkcd) (*Comic, error) {
 		x.Month = strings.Join([]string{"0", x.Month}, "")
 	}
 
-	dateString := strings.Join([]string{x.Year, x.Month, x.Day}, "-")
-	date, err := time.Parse("2006-01-02", dateString)
+	date, err := time.Parse("2006-01-02", fmt.Sprintf("%s-%s-%s", x.Year, x.Month, x.Day))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse date: %v", err)
 	}

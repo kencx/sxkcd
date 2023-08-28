@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -31,10 +30,12 @@ func (c *Client) FetchAll(filename string) error {
 		return fmt.Errorf("no filename provided")
 	}
 
-	num, err := c.FetchLatestNum()
+	// fetch latest
+	latest, err := c.Fetch(0)
 	if err != nil {
 		return err
 	}
+	num := latest.Number
 
 	log.Printf("Retrieving %d comics from API", num-1)
 
@@ -99,15 +100,6 @@ func (c *Client) FetchAll(filename string) error {
 	return nil
 }
 
-// Fetch latest comic number
-func (c *Client) FetchLatestNum() (int, error) {
-	var dest Xkcd
-	if err := c.getXkcd(0, &dest); err != nil {
-		return -1, fmt.Errorf("failed to get latest comic: %w", err)
-	}
-	return dest.Number, nil
-}
-
 // Fetch comic by given number
 // If 0 is passed, retrieves latest comic.
 func (c *Client) Fetch(num int) (*Comic, error) {
@@ -141,25 +133,12 @@ func (c *Client) Fetch(num int) (*Comic, error) {
 	return comic, nil
 }
 
-// Builds URL: https://xkcd.com/[number]/info.0.json
-func buildXkcdURL(number int) (string, error) {
-	const endPoint = "info.0.json"
-
-	u, err := url.Parse("https://xkcd.com")
-	if err != nil {
-		return "", err
+func buildXkcdURL(num int) string {
+	const latest = 0
+	if num == latest {
+		return "https://xkcd.com/info.0.json"
 	}
-
-	if number < 0 {
-		return "", fmt.Errorf("number must be >= 0")
-	} else if number == 0 {
-		// latest comic
-		u.Path = path.Join(u.Path, endPoint)
-	} else {
-		n := strconv.Itoa(number)
-		u.Path = path.Join(u.Path, n, endPoint)
-	}
-	return u.String(), nil
+	return fmt.Sprintf("https://xkcd.com/%d/info.0.json", num)
 }
 
 // Builds URL: https://www.explainxkcd.com

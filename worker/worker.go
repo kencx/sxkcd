@@ -46,7 +46,7 @@ func (w *Worker) Start() error {
 					// signal interrupt will be blocked during sleep
 					err := util.Retry(3, 10*time.Second, w.fetchComic)
 					if err != nil {
-						log.Printf("failed to retry, skipping run")
+						log.Printf("worker: failed to retry, skipping run")
 					}
 				}
 			}
@@ -61,7 +61,7 @@ func (w *Worker) Stop() {
 
 func (w *Worker) fetchComic() error {
 	if w.busy {
-		return fmt.Errorf("fetching already in progress")
+		return fmt.Errorf("worker: fetching already in progress")
 	}
 
 	w.busy = true
@@ -69,36 +69,34 @@ func (w *Worker) fetchComic() error {
 		w.busy = false
 	}()
 
+	start := time.Now()
+	log.Println("worker: fetching latest comic")
+
 	client := data.NewClient()
-	latest, err := client.FetchLatestNum()
+	latest, err := client.Fetch(0)
 	if err != nil {
 		return err
 	}
 
-	exists, err := w.rds.ComicExists(latest)
+	exists, err := w.rds.ComicExists(latest.Number)
 	if err != nil {
 		return err
 	}
 	if exists {
-		log.Printf("latest comic #%d already exists, skipping...", latest)
+		log.Printf("worker: latest comic #%d already exists, skipping...", latest.Number)
 		return nil
+	} else {
+
 	}
 
-	log.Printf("fetching latest comic: #%d", latest)
-	start := time.Now()
-	comic, err := client.Fetch(latest)
+	c, err := json.Marshal(&latest)
 	if err != nil {
+		return fmt.Errorf("worker: failed to marshal comic: %w", err)
+	}
+
+	if err = w.rds.Add(latest.Number, c); err != nil {
 		return err
 	}
-
-	c, err := json.Marshal(&comic)
-	if err != nil {
-		return fmt.Errorf("failed to marshal comic: %v", err)
-	}
-	if err = w.rds.Add(comic.Number, c); err != nil {
-		return err
-	}
-
-	log.Printf("Successfully fetched comic #%d in %v\n", latest, time.Since(start))
+	log.Printf("worker: successfully fetched comic #%d in %v\n", latest.Number, time.Since(start))
 	return nil
 }

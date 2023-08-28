@@ -35,11 +35,7 @@ func NewClient() *Client {
 }
 
 func (c *Client) getXkcd(num int, dest interface{}) error {
-	url, err := buildXkcdURL(num)
-	if err != nil {
-		return err
-	}
-
+	url := buildXkcdURL(num)
 	return c.getWithRetry(url, dest)
 }
 
