@@ -105,7 +105,9 @@ func main() {
 			os.Exit(0)
 
 		case "server":
-			serverCmd.Parse(args[1:])
+			if err := serverCmd.Parse(args[1:]); err != nil {
+				log.Fatal("err: %w", err)
+			}
 
 			if rds == "" {
 				log.Fatal("Redis connection URI must be provided")
@@ -137,5 +139,8 @@ func main() {
 			fmt.Print(help)
 			os.Exit(1)
 		}
+	} else {
+		fmt.Print(help)
+		os.Exit(1)
 	}
 }
