@@ -65,8 +65,8 @@ func main() {
 	downloadCmd := flag.NewFlagSet("download", flag.ExitOnError)
 	downloadCmd.IntVar(&num, "n", 0, "download comic by number")
 	downloadCmd.IntVar(&num, "num", 0, "download comic by number")
-	downloadCmd.StringVar(&downloadFile, "f", "comics.json", "download all comics to file")
-	downloadCmd.StringVar(&downloadFile, "file", "comics.json", "download all comics to file")
+	downloadCmd.StringVar(&downloadFile, "f", "", "download all comics to file")
+	downloadCmd.StringVar(&downloadFile, "file", "", "download all comics to file")
 
 	flag.Usage = func() { os.Stdout.Write([]byte(help)) }
 	flag.Parse()
@@ -77,69 +77,65 @@ func main() {
 	}
 
 	args := flag.Args()
-	if len(args) > 1 {
-		switch args[0] {
-		case "download":
-			downloadCmd.Parse(args[1:])
 
-			c := data.NewClient()
+	if len(args) <= 1 {
+		fmt.Print(help)
+		os.Exit(1)
+	}
 
-			if num > 0 {
-				comic, err := c.Fetch(num)
-				if err != nil {
-					log.Fatal(err)
-				}
-				b, err := json.Marshal(comic)
-				if err != nil {
-					log.Fatalf("failed to marshal comic: %v", err)
-				}
-				fmt.Println(string(b))
-				os.Exit(0)
-			} else {
-				log.Fatalf("num must be >= 0")
-			}
+	switch args[0] {
+	case "download":
+		downloadCmd.Parse(args[1:])
 
+		c := data.NewClient()
+		if downloadFile != "" {
 			if err := c.FetchAll(downloadFile); err != nil {
 				log.Fatal(err)
 			}
-			os.Exit(0)
-
-		case "server":
-			if err := serverCmd.Parse(args[1:]); err != nil {
-				log.Fatal("err: %w", err)
+		} else {
+			if num < 0 {
+				log.Fatalf("comic number must be >= 0")
 			}
-
-			if rds == "" {
-				log.Fatal("Redis connection URI must be provided")
-			}
-			if port <= 0 {
-				log.Fatalf("Invalid port: %v", port)
-			}
-
-			s, err := http.NewServer(rds, version, static)
+			comic, err := c.Fetch(num)
 			if err != nil {
 				log.Fatal(err)
 			}
-
-			if file != "" {
-				if err := s.Initialize(file, reindex); err != nil {
-					log.Fatal(err)
-				}
-			} else {
-				if err := s.Verify(); err != nil {
-					log.Fatal(err)
-				}
+			b, err := json.Marshal(comic)
+			if err != nil {
+				log.Fatalf("failed to marshal comic: %v", err)
 			}
+			fmt.Println(string(b))
+		}
 
-			if err := s.Run(port); err != nil {
+		os.Exit(0)
+
+	case "server":
+		serverCmd.Parse(args[1:])
+
+		if port <= 0 {
+			log.Fatalf("Invalid port: %v", port)
+		}
+
+		s, err := http.NewServer(rds, version, static)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if file != "" {
+			if err := s.Initialize(file, reindex); err != nil {
 				log.Fatal(err)
 			}
-
-		default:
-			fmt.Print(help)
-			os.Exit(1)
+		} else {
+			if err := s.Verify(); err != nil {
+				log.Fatal(err)
+			}
 		}
-	} else {
+
+		if err := s.Run(port); err != nil {
+			log.Fatal(err)
+		}
+
+	default:
 		fmt.Print(help)
 		os.Exit(1)
 	}
