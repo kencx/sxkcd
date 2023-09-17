@@ -85,8 +85,6 @@ func (w *Worker) fetchComic() error {
 	if exists {
 		log.Printf("worker: latest comic #%d already exists, skipping...", latest.Number)
 		return nil
-	} else {
-
 	}
 
 	c, err := json.Marshal(&latest)

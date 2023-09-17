@@ -88,25 +88,46 @@ func main() {
 		downloadCmd.Parse(args[1:])
 
 		c := data.NewClient()
-		if downloadFile != "" {
-			if err := c.FetchAll(downloadFile); err != nil {
+
+		var (
+			data []byte
+			err  error
+		)
+
+		if num < 0 {
+			log.Fatalf("comic number must be >= 0")
+
+		} else if num == 0 {
+			data, err = c.FetchAll()
+			if err != nil {
 				log.Fatal(err)
 			}
+
 		} else {
-			if num < 0 {
-				log.Fatalf("comic number must be >= 0")
-			}
 			comic, err := c.Fetch(num)
 			if err != nil {
 				log.Fatal(err)
 			}
-			b, err := json.Marshal(comic)
+			data, err = json.Marshal(comic)
 			if err != nil {
 				log.Fatalf("failed to marshal comic: %v", err)
 			}
-			fmt.Println(string(b))
 		}
 
+		if downloadFile != "" {
+			if err := os.WriteFile(downloadFile, data, 0644); err != nil {
+				log.Fatal(err)
+			}
+
+			if num > 0 {
+				log.Printf("%d comic(s) downloaded to %s", num, downloadFile)
+			} else {
+				log.Printf("All comics downloaded to %s", downloadFile)
+			}
+
+		} else {
+			fmt.Println(string(data))
+		}
 		os.Exit(0)
 
 	case "server":

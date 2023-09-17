@@ -1,34 +1,11 @@
 package data
 
 import (
-	"fmt"
 	"net/url"
 	"reflect"
 	"strconv"
 	"testing"
 )
-
-func TestGetXkcdEndpoint(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		num := 1
-		want := fmt.Sprintf("https://xkcd.com/%d/info.0.json", num)
-
-		got := buildXkcdURL(num)
-		if got != want {
-			t.Errorf("got %v, want %v", got, want)
-		}
-	})
-
-	t.Run("0", func(t *testing.T) {
-		num := 0
-		want := "https://xkcd.com/info.0.json"
-
-		got := buildXkcdURL(num)
-		if got != want {
-			t.Errorf("got %v, want %v", got, want)
-		}
-	})
-}
 
 func TestGetExplainEndpoint(t *testing.T) {
 	num := 5

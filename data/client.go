@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/kencx/sxkcd/util"
@@ -35,7 +37,15 @@ func NewClient() *Client {
 }
 
 func (c *Client) getXkcd(num int, dest interface{}) error {
-	url := buildXkcdURL(num)
+	const latest = 0
+	var url string
+
+	if num == latest {
+		url = "https://xkcd.com/info.0.json"
+	} else {
+		url = fmt.Sprintf("https://xkcd.com/%d/info.0.json", num)
+	}
+
 	return c.getWithRetry(url, dest)
 }
 
@@ -97,4 +107,30 @@ func (c *Client) get(url string, dest interface{}) error {
 		}
 	}
 	return nil
+}
+
+// Builds URL: https://www.explainxkcd.com
+func buildExplainURL(number int) (string, error) {
+	u, err := url.Parse("https://www.explainxkcd.com/wiki/api.php")
+	if err != nil {
+		return "", err
+	}
+
+	// explainwiki query values
+	values := map[string]string{
+		"action":       "parse",
+		"format":       "json",
+		"redirects":    "true",
+		"prop":         "wikitext",
+		"sectiontitle": "Explanation",
+	}
+
+	q := u.Query()
+	for k, v := range values {
+		q.Set(k, v)
+	}
+
+	q.Set("page", strconv.Itoa(number))
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }

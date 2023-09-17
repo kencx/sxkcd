@@ -6,11 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/url"
 	"os"
 	"os/signal"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -25,15 +23,11 @@ var (
 
 // Fetch all comics latest concurrently.
 // This does not guarantee that comics will be in order.
-func (c *Client) FetchAll(filename string) error {
-	if filename == "" {
-		return fmt.Errorf("no filename provided")
-	}
-
+func (c *Client) FetchAll() ([]byte, error) {
 	// fetch latest
 	latest, err := c.Fetch(0)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	num := latest.Number
 
@@ -46,6 +40,11 @@ func (c *Client) FetchAll(filename string) error {
 	g, gtx := errgroup.WithContext(ctx)
 	c.ctx = gtx
 	g.SetLimit(50)
+
+	// reset context
+	defer func() {
+		c.ctx = context.Background()
+	}()
 
 	progress := 0
 
@@ -71,33 +70,24 @@ func (c *Client) FetchAll(filename string) error {
 		})
 
 		if progress%200 == 0 && progress != 0 {
-			log.Printf("Downloaded: %d/%d comics\n", progress, num)
+			log.Printf("Downloaded: %d/%d comics\n", progress, num-1)
 		}
 	}
 
 	err = g.Wait()
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			return fmt.Errorf("cancelled due to signal interrupt")
+			return nil, fmt.Errorf("cancelled due to signal interrupt")
 		} else {
-			return err
+			return nil, err
 		}
 	}
 
 	s, err := json.Marshal(comics)
 	if err != nil {
-		return fmt.Errorf("failed to marshal comics: %v", err)
+		return nil, fmt.Errorf("failed to marshal comics: %v", err)
 	}
-
-	if err := WriteToFile(filename, s); err != nil {
-		return fmt.Errorf("failed to write to %s: %v", filename, err)
-	}
-
-	log.Printf("%d comics downloaded to %s", len(comics)-1, filename)
-	// reset context
-	c.ctx = context.Background()
-
-	return nil
+	return s, nil
 }
 
 // Fetch comic by given number
@@ -133,40 +123,6 @@ func (c *Client) Fetch(num int) (*Comic, error) {
 	return comic, nil
 }
 
-func buildXkcdURL(num int) string {
-	const latest = 0
-	if num == latest {
-		return "https://xkcd.com/info.0.json"
-	}
-	return fmt.Sprintf("https://xkcd.com/%d/info.0.json", num)
-}
-
-// Builds URL: https://www.explainxkcd.com
-func buildExplainURL(number int) (string, error) {
-	u, err := url.Parse("https://www.explainxkcd.com/wiki/api.php")
-	if err != nil {
-		return "", err
-	}
-
-	// explainwiki query values
-	values := map[string]string{
-		"action":       "parse",
-		"format":       "json",
-		"redirects":    "true",
-		"prop":         "wikitext",
-		"sectiontitle": "Explanation",
-	}
-
-	q := u.Query()
-	for k, v := range values {
-		q.Set(k, v)
-	}
-
-	q.Set("page", strconv.Itoa(number))
-	u.RawQuery = q.Encode()
-	return u.String(), nil
-}
-
 func extractExplanation(wikitext string) string {
 	if wikitext == "" {
 		return ""
@@ -196,12 +152,4 @@ func extractExplanation(wikitext string) string {
 	result = strings.TrimSpace(result)
 	result = strings.ToValidUTF8(result, "")
 	return result
-}
-
-func WriteToFile(filename string, data []byte) error {
-	err := os.WriteFile(filename, data, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write file: %v", err)
-	}
-	return nil
 }
