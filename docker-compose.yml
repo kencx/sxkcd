@@ -24,9 +24,12 @@ services:
     container_name: sxkcd
     hostname: sxkcd
     image: ghcr.io/kencx/sxkcd:latest
-    build: .
-    # uncomment on first startup
-    # command: ["-f", "/data/comics.json"]
+    build:
+      context: .
+      tags:
+        - latest
+    # run "docker compose run --rm app download -f /data/comics.json" prior to starting
+    command: ["server", "-p", "6380", "-r", "redis:6379", "-f", "/data/comics.json"]
     restart: unless-stopped
     ports:
       - "6380:6380"

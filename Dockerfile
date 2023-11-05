@@ -24,3 +24,4 @@ WORKDIR /
 COPY --from=builder --chmod=+x /app/sxkcd /app/entrypoint.sh ./
 EXPOSE 6380
 ENTRYPOINT [ "/entrypoint.sh" ]
+CMD ["server", "-p", "6380", "-r", "redis:6379"]

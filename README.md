@@ -28,9 +28,8 @@ Start your own instance of `sxkcd` with the provided `docker-compose.yml`:
 ```bash
 # download all comic data
 $ docker compose run \
-    --rm -d \
+    --rm \
     --no-deps \
-    --entrypoint "./sxkcd" \
     app download -f /data/comics.json
 
 $ docker-compose -d
@@ -84,9 +83,8 @@ Run with docker-compose:
 ```bash
 # download all comic data
 $ docker compose run \
-    --rm -d \
+    --rm \
     --no-deps \
-    --entrypoint "./sxkcd" \
     app download -f /data/comics.json
 
 $ docker-compose -d
